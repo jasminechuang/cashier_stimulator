@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>餐廳服務員收銀機點餐模擬器 - POS System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        .pos-btn:active { transform: scale(0.96); }
+    </style>
+</head>
+<body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col items-center justify-between p-6">
+
+    <!-- 頂部 POS 機狀態列 -->
+    <header class="w-full max-w-6xl bg-stone-800 shadow-2xl rounded-2xl p-4 mb-4 flex flex-col md:flex-row justify-between items-center border border-stone-700">
+        <div class="flex items-center space-x-3 mb-2 md:mb-0">
+            <span class="text-3xl">💻</span>
+            <div>
+                <h1 class="text-xl font-black text-amber-400 tracking-wider">餐廳 POS 收銀結帳系統</h1>
+                <p class="text-xs text-stone-400 font-medium">Restaurant Cashier & Order Simulator v1.1</p>
+            </div>
+        </div>
+        <div class="flex space-x-4 items-center">
+            <div class="bg-stone-900 px-4 py-2 rounded-xl border border-stone-700 text-center">
+                <p class="text-[10px] text-stone-400 font-bold">今日營業額</p>
+                <p id="total-revenue" class="text-base font-black text-emerald-400">$0</p>
+            </div>
+            <div class="bg-stone-900 px-4 py-2 rounded-xl border border-stone-700 text-center">
+                <p class="text-[10px] text-stone-400 font-bold">服務生評分</p>
+                <p id="waiter-rating" class="text-base font-black text-amber-400">⭐⭐⭐⭐⭐</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主 POS 畫面：左側點餐明細，右側菜單按鈕 -->
+    <main class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-12 gap-6 mb-4">
+        
+        <!-- 左側：收銀機明細與結帳區 (5格寬) -->
+        <div class="md:col-span-5 bg-stone-800 shadow-2xl rounded-2xl p-5 border border-stone-700 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-center mb-3 border-b border-stone-700 pb-2">
+                    <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">當前客人的點餐清單</span>
+                    <span id="order-status" class="text-xs bg-amber-950 text-amber-300 px-2 py-0.5 rounded font-bold">等待客人入座</span>
+                </div>
+
+                <!-- 顧客需求提示 -->
+                <div class="bg-stone-900 rounded-xl p-3 mb-3 border border-stone-700">
+                    <p class="text-xs text-stone-300 font-bold mb-1">💬 顧客口頭需求：</p>
+                    <p id="customer-wish" class="text-xs text-amber-200 italic">「請點擊下方按鈕迎接第一位客人入座點餐！」</p>
+                </div>
+
+                <!-- 已點餐點明細表 -->
+                <div class="bg-stone-900 rounded-xl p-3 border border-stone-700 h-64 overflow-y-auto mb-3">
+                    <table class="w-full text-xs text-left">
+                        <thead>
+                            <tr class="text-stone-400 border-b border-stone-800 pb-1">
+                                <th class="pb-1">品項名稱</th>
+                                <th class="pb-1 text-center">數量</th>
+                                <th class="pb-1 text-right">金額</th>
+                                <th class="pb-1 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart-items" class="divide-y divide-stone-800">
+                            <!-- 動態插入已點餐點 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 結帳總計與動作按鈕 -->
+            <div>
+                <div class="bg-stone-900 p-3 rounded-xl border border-stone-700 mb-3 flex justify-between items-center">
+                    <span class="text-xs font-bold text-stone-400">總計金額 (Total):</span>
+                    <span id="cart-total" class="text-lg font-black text-amber-400">$0</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="nextCustomer()" id="next-customer-btn" class="bg-amber-600 hover:bg-amber-500 text-stone-950 font-black py-2.5 px-4 rounded-xl text-xs shadow transition pos-btn cursor-pointer">
+                        🔔 迎接下一位客人
+                    </button>
+                    <button onclick="checkout()" id="checkout-btn" disabled class="bg-stone-700 text-stone-500 font-bold py-2.5 px-4 rounded-xl text-xs shadow cursor-not-allowed transition">
+                        💳 送單並結帳
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側：POS 觸控點餐分類面板 (7格寬) -->
+        <div class="md:col-span-7 bg-stone-800 shadow-2xl rounded-2xl p-5 border border-stone-700 flex flex-col justify-between">
+            <div>
+                <!-- 分類標籤頁 -->
+                <div class="flex space-x-2 mb-4 border-b border-stone-700 pb-2">
+                    <button onclick="filterMenu('all')" class="bg-amber-600 text-stone-950 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">全部品項</button>
+                    <button onclick="filterMenu('main')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">主食特餐</button>
+                    <button onclick="filterMenu('side')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">炸物小食</button>
+                    <button onclick="filterMenu('drink')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">手搖飲品</button>
+                </div>
+
+                <!-- 菜單 POS 按鈕網格 -->
+                <div id="menu-grid" class="grid grid-cols-3 gap-3 overflow-y-auto max-h-[380px] p-1">
+                    <!-- 動態生成 POS 按鈕 -->
+                </div>
+            </div>
+
+            <div class="mt-4 text-center">
+                <p class="text-[11px] text-stone-400 font-medium">💡 提示：點擊右側餐點按鈕加入收銀機清單，核對客人需求後即可點擊結帳！</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- 結帳找零 Modal -->
+    <div id="checkout-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
+        <div class="bg-stone-800 border border-amber-500/50 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl">
+            <h3 class="text-base font-black text-amber-400 mb-2">💵 收銀結帳與找零</h3>
+            <p id="modal-total-text" class="text-xs text-stone-300 mb-4">應收金額：$0</p>
+            
+            <div class="mb-4">
+                <label class="text-xs text-stone-400 block mb-1">請輸入客人給付現金額：</label>
+                <input type="number" id="cash-given" class="w-full bg-stone-900 border border-stone-600 rounded-xl p-2 text-center text-amber-300 font-black text-lg focus:outline-none focus:border-amber-400" value="500">
+            </div>
+
+            <div class="flex space-x-2">
+                <button onclick="confirmCheckout()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-black py-2.5 rounded-xl text-xs shadow cursor-pointer">
+                    確認找零並出餐
+                </button>
+                <button onclick="closeCheckoutModal()" class="bg-stone-700 hover:bg-stone-600 text-stone-300 font-bold py-2.5 px-3 rounded-xl text-xs cursor-pointer">
+                    取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲邏輯 Script -->
+    <script>
+        let revenue = 0;
+        let ratingScore = 5.0;
+        let servedCount = 0;
+        let currentCustomer = null;
+        let cart = [];
+
+        const menuItems = [
+            { id: 1, name: "招牌牛肉堡", category: "main", price: 180, emoji: "🍔" },
+            { id: 2, name: "黃金起司薯條", category: "side", price: 90, emoji: "🍟" },
+            { id: 3, name: "日式炸雞塊", category: "side", price: 120, emoji: "🍗" },
+            { id: 4, name: "黑糖珍珠鮮奶", category: "drink", price: 85, emoji: "🧋" },
+            { id: 5, name: "經典冰美式", category: "drink", price: 75, emoji: "☕" },
+            { id: 6, name: "奶油蘑菇義大利麵", category: "main", price: 220, emoji: "🍝" },
+            { id: 7, name: "夏威夷鮮蝦披薩", category: "main", price: 280, emoji: "🍕" },
+            { id: 8, name: "酥皮濃湯", category: "side", price: 80, emoji: "🥣" },
+            { id: 9, name: "鮮榨柳橙汁", category: "drink", price: 90, emoji: "🧃" },
+            { id: 10, name: "草莓奶昔", category: "drink", price: 110, emoji: "🥤" },
+            { id: 11, name: "炙燒鮭魚排", category: "main", price: 320, emoji: "🐟" },
+            { id: 12, name: "凱薩沙拉", category: "side", price: 140, emoji: "🥗" }
+        ];
+
+        const customerTypes = [
+            { name: "上班族小陳", wishItem: "招牌牛肉堡", drink: "經典冰美式" },
+            { name: "大學生小美", wishItem: "奶油蘑菇義大利麵", drink: "黑糖珍珠鮮奶" },
+            { name: "美食家王大哥", wishItem: "炙燒鮭魚排", drink: "鮮榨柳橙汁" },
+            { name: "家庭主婦陳太太", wishItem: "夏威夷鮮蝦披薩", drink: "酥皮濃湯" }
+        ];
+
+        function renderMenu(category = 'all') {
+            const grid = document.getElementById('menu-grid');
+            grid.innerHTML = '';
+
+            const filtered = category === 'all' ? menuItems : menuItems.filter(i => i.category === category);
+
+            filtered.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = "bg-stone-900 hover:bg-stone-700 border border-stone-700 rounded-xl p-3 text-center flex flex-col items-center justify-center shadow transition pos-btn h-24 cursor-pointer";
+                btn.innerHTML = `
+                    <span class="text-2xl mb-1">${item.emoji}</span>
+                    <span class="text-xs font-bold text-white truncate w-full">${item.name}</span>
+                    <span class="text-[11px] text-amber-400 font-black mt-0.5">$${item.price}</span>
+                `;
+                btn.onclick = () => addToCart(item);
+                grid.appendChild(btn);
+            });
+        }
+
+        function filterMenu(cat) {
+            document.querySelectorAll('.category-tab').forEach(b => b.className = "bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab");
+            event.target.className = "bg-amber-600 text-stone-950 font-bold px-3 py-1.5 rounded-lg text-xs category-tab";
+            renderMenu(cat);
+        }
+
+        function nextCustomer() {
+            currentCustomer = customerTypes[Math.floor(Math.random() * customerTypes.length)];
+            cart = [];
+            updateCartUI();
+
+            document.getElementById('order-status').innerText = "點餐中...";
+            document.getElementById('order-status').className = "text-xs bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded font-bold";
+            document.getElementById('customer-wish').innerText = `「你好！我想要一份 ${currentCustomer.wishItem} 和一杯 ${currentCustomer.drink}，謝謝！」`;
+            
+            document.getElementById('checkout-btn').disabled = false;
+            document.getElementById('checkout-btn').className = "flex-1 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-black py-2.5 px-4 rounded-xl text-xs shadow cursor-pointer transition pos-btn";
+            document.getElementById('next-customer-btn').disabled = true;
+            document.getElementById('next-customer-btn').className = "bg-stone-700 text-stone-500 font-bold py-2.5 px-4 rounded-xl text-xs cursor-not-allowed";
+        }
+
+        function addToCart(item) {
+            if (!currentCustomer) {
+                alert("請先點擊「迎接下一位客人」再開始點餐！");
+                return;
+            }
+            const found = cart.find(i => i.id === item.id);
+            if (found) {
+                found.qty++;
+            } else {
+                cart.push({ ...item, qty: 1 });
+            }
+            updateCartUI();
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(i => i.id !== id);
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const tbody = document.getElementById('cart-items');
+            tbody.innerHTML = '';
+            let total = 0;
+
+            cart.forEach(item => {
+                total += item.price * item.qty;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-1.5">${item.emoji} ${item.name}</td>
+                    <td class="py-1.5 text-center font-bold">${item.qty}</td>
+                    <td class="py-1.5 text-right font-black text-amber-400">$${item.price * item.qty}</td>
+                    <td class="py-1.5 text-right"><button onclick="removeFromCart(${item.id})" class="text-red-400 hover:text-red-300 font-bold px-1 cursor-pointer">✕</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('cart-total').innerText = `$${total}`;
+        }
+
+        function checkout() {
+            if (cart.length === 0) {
+                alert("尚未點選任何餐點！");
+                return;
+            }
+            const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            document.getElementById('modal-total-text').innerText = `應收金額：$${total}`;
+            document.getElementById('cash-given').value = total + 100;
+            document.getElementById('checkout-modal').classList.remove('hidden');
+            document.getElementById('checkout-modal').classList.add('flex');
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkout-modal').classList.add('hidden');
+            document.getElementById('checkout-modal').classList.remove('flex');
+        }
+
+        function confirmCheckout() {
+            if (!currentCustomer) return;
+
+            const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const cash = parseInt(document.getElementById('cash-given').value);
+
+            if (isNaN(cash) || cash < total) {
+                alert("客人給的現金不足或金額輸入錯誤！");
+                return;
+            }
+
+            const change = cash - total;
+            revenue += total;
+            servedCount++;
+
+            const hasMain = cart.some(i => i.name === currentCustomer.wishItem);
+            const hasDrink = cart.some(i => i.name === currentCustomer.drink);
+            let feedback = "結帳成功！客人非常滿意您的服務！⭐⭐⭐⭐⭐";
+            
+            if (!hasMain || !hasDrink) {
+                ratingScore = Math.max(1.0, ratingScore - 0.3);
+                feedback = "結帳完成，但似乎漏掉了客人想點的主餐或飲料...⭐⭐⭐";
+            }
+
+            // 更新主畫面狀態
+            document.getElementById('total-revenue').innerText = `$${revenue}`;
+            document.getElementById('waiter-rating').innerText = `⭐ ${ratingScore.toFixed(1)}`;
+            document.getElementById('customer-wish').innerText = feedback;
+            document.getElementById('order-status').innerText = "結帳完成";
+            document.getElementById('order-status').className = "text-xs bg-stone-700 text-stone-300 px-2 py-0.5 rounded font-bold";
+
+            // 關閉 Modal
+            closeCheckoutModal();
+
+            // 重置按鈕狀態
+            document.getElementById('checkout-btn').disabled = true;
+            document.getElementById('checkout-btn').className = "flex-1 bg-stone-700 text-stone-500 font-bold py-2.5 px-4 rounded-xl text-xs shadow cursor-not-allowed";
+            document.getElementById('next-customer-btn').disabled = false;
+            document.getElementById('next-customer-btn').className = "bg-amber-600 hover:bg-amber-500 text-stone-950 font-black py-2.5 px-4 rounded-xl text-xs shadow cursor-pointer transition pos-btn";
+            
+            alert(`結帳完成！找零：$${change}`);
+            currentCustomer = null;
+        }
+
+        renderMenu();
+    </script>
+</body>
+</html>
