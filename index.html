@@ -7,6 +7,7 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; }
         .pos-btn:active { transform: scale(0.96); }
@@ -23,7 +24,10 @@
                 <p class="text-xs text-stone-400 font-medium">Restaurant Cashier & Order Simulator v1.1</p>
             </div>
         </div>
-        <div class="flex space-x-4 items-center">
+        <div class="flex flex-wrap gap-2 items-center justify-center">
+            <button id="sound-toggle" onclick="toggleSound()" class="bg-stone-900 hover:bg-stone-700 px-3 py-2 rounded-xl border border-stone-700 text-xs font-bold" aria-pressed="true">🔊 音效開</button>
+            <button onclick="openGoogleLink()" class="bg-stone-900 hover:bg-stone-700 px-3 py-2 rounded-xl border border-stone-700 text-xs font-bold">🔗 連結 Google</button>
+            <span id="google-account-status" class="hidden text-xs text-emerald-300" aria-live="polite"></span>
             <div class="bg-stone-900 px-4 py-2 rounded-xl border border-stone-700 text-center">
                 <p class="text-[10px] text-stone-400 font-bold">今日營業額</p>
                 <p id="total-revenue" class="text-base font-black text-emerald-400">$0</p>
@@ -173,6 +177,23 @@
         </div>
     </div>
 
+    <div id="google-link-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="google-link-title">
+        <div class="bg-stone-800 border border-sky-500/50 rounded-3xl p-6 max-w-md w-full shadow-2xl">
+            <div class="flex justify-between items-center mb-3">
+                <h3 id="google-link-title" class="text-base font-black text-sky-300">🔗 連結 Google 帳號</h3>
+                <button onclick="closeGoogleLink()" class="text-stone-400 hover:text-white text-xl px-2" aria-label="關閉">×</button>
+            </div>
+            <p class="text-xs text-stone-300 mb-3">輸入網站管理者提供的 OAuth 用戶端 ID，再選擇要連結的 Google 帳號。</p>
+            <label for="google-client-id" class="block text-xs text-stone-400 mb-1">Google OAuth 用戶端 ID</label>
+            <input id="google-client-id" type="text" autocomplete="off" placeholder="例如：1234567890-abc.apps.googleusercontent.com" class="w-full bg-stone-900 border border-stone-600 rounded-xl p-2 text-xs text-white mb-3">
+            <p id="google-link-message" class="text-xs text-amber-300 mb-3" aria-live="polite">連結僅用於辨識帳號；遊戲進度仍保存在此瀏覽器。</p>
+            <div class="flex gap-2">
+                <button onclick="linkGoogleAccount()" class="flex-1 bg-sky-600 hover:bg-sky-500 text-stone-950 font-black py-2.5 rounded-xl text-xs">選擇 Google 帳號</button>
+                <button onclick="closeGoogleLink()" class="bg-stone-700 hover:bg-stone-600 text-stone-200 font-bold py-2.5 px-3 rounded-xl text-xs">取消</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 關卡回顧與重玩 Modal -->
     <div id="level-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="level-modal-title">
         <div class="bg-stone-800 border border-amber-500/50 rounded-3xl p-5 max-w-lg w-full shadow-2xl max-h-[80vh] flex flex-col">
@@ -201,6 +222,93 @@
         let currentCustomer = null;
         let isDeliveryOrder = false;
         let cart = [];
+        let soundEnabled = localStorage.getItem('cashierSoundEnabled') !== 'false';
+        let soundContext = null;
+
+        function playSound(kind = 'tap') {
+            if (!soundEnabled) return;
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
+                soundContext ||= new AudioContextClass();
+                if (soundContext.state === 'suspended') soundContext.resume();
+                const tones = kind === 'success' ? [660, 880] : kind === 'customer' ? [523, 659] : [440];
+                tones.forEach((frequency, index) => {
+                    const oscillator = soundContext.createOscillator();
+                    const gain = soundContext.createGain();
+                    const start = soundContext.currentTime + index * 0.12;
+                    oscillator.type = 'sine';
+                    oscillator.frequency.value = frequency;
+                    gain.gain.setValueAtTime(0.0001, start);
+                    gain.gain.exponentialRampToValueAtTime(0.12, start + 0.015);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.16);
+                    oscillator.connect(gain);
+                    gain.connect(soundContext.destination);
+                    oscillator.start(start);
+                    oscillator.stop(start + 0.17);
+                });
+            } catch (error) { /* 音效不可用時不影響遊戲 */ }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('cashierSoundEnabled', String(soundEnabled));
+            const button = document.getElementById('sound-toggle');
+            button.textContent = soundEnabled ? '🔊 音效開' : '🔇 音效關';
+            button.setAttribute('aria-pressed', String(soundEnabled));
+            if (soundEnabled) playSound();
+        }
+
+        function openGoogleLink() {
+            document.getElementById('google-link-modal').classList.remove('hidden');
+            document.getElementById('google-link-modal').classList.add('flex');
+            document.getElementById('google-client-id').value = localStorage.getItem('cashierGoogleClientId') || '';
+        }
+
+        function closeGoogleLink() {
+            document.getElementById('google-link-modal').classList.add('hidden');
+            document.getElementById('google-link-modal').classList.remove('flex');
+        }
+
+        function linkGoogleAccount() {
+            const clientId = document.getElementById('google-client-id').value.trim();
+            const message = document.getElementById('google-link-message');
+            if (!clientId) {
+                message.textContent = '請先輸入已設定此網站來源的 OAuth 用戶端 ID。';
+                return;
+            }
+            if (!window.google?.accounts?.oauth2) {
+                message.textContent = 'Google 登入服務尚未載入，請確認網路連線後再試。';
+                return;
+            }
+            localStorage.setItem('cashierGoogleClientId', clientId);
+            const tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: clientId,
+                scope: 'openid email',
+                callback: async (response) => {
+                    if (response.error) {
+                        message.textContent = 'Google 帳號授權未完成，請再試一次。';
+                        return;
+                    }
+                    try {
+                        const profileResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                            headers: { Authorization: `Bearer ${response.access_token}` }
+                        });
+                        if (!profileResponse.ok) throw new Error('Google profile request failed');
+                        const profile = await profileResponse.json();
+                        const account = profile.email || 'Google 帳號';
+                        localStorage.setItem('cashierGoogleAccountEmail', account);
+                        document.getElementById('google-account-status').textContent = `已連結：${account}`;
+                        document.getElementById('google-account-status').classList.remove('hidden');
+                        message.textContent = `已連結 ${account}。此頁不會保存 Google 存取權杖。`;
+                        playSound('success');
+                    } catch (error) {
+                        message.textContent = '無法讀取 Google 帳號資料，請檢查 OAuth 設定與網路連線。';
+                    }
+                }
+            });
+            tokenClient.requestAccessToken({ prompt: 'select_account' });
+        }
 
         function getDailyTaskTarget(level) {
             return 10 + Math.floor((level - 1) / 10);
@@ -504,6 +612,7 @@
         }
 
         function nextCustomer() {
+            playSound('customer');
             isDeliveryOrder = Math.random() < 0.3;
             currentCustomer = { ...customerTypes[Math.floor(Math.random() * customerTypes.length)] };
             unlockedCustomers.add(currentCustomer.id);
@@ -547,6 +656,7 @@
                 cart.push({ ...item, qty: 1 });
             }
             updateCartUI();
+            playSound();
         }
 
         function removeFromCart(id) {
@@ -597,6 +707,7 @@
 
         function confirmCheckout() {
             if (!currentCustomer) return;
+            playSound('success');
             ensureCurrentDay();
 
             const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
@@ -673,6 +784,13 @@
         }
 
         loadDailyTask();
+        document.getElementById('sound-toggle').textContent = soundEnabled ? '🔊 音效開' : '🔇 音效關';
+        document.getElementById('sound-toggle').setAttribute('aria-pressed', String(soundEnabled));
+        const linkedGoogleEmail = localStorage.getItem('cashierGoogleAccountEmail');
+        if (linkedGoogleEmail) {
+            document.getElementById('google-account-status').textContent = `已連結：${linkedGoogleEmail}`;
+            document.getElementById('google-account-status').classList.remove('hidden');
+        }
         renderMenu();
         renderAlbum();
     </script>
