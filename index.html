@@ -120,11 +120,11 @@
             <div>
                 <!-- 分類標籤頁 -->
                 <div class="flex space-x-2 mb-4 border-b border-stone-700 pb-2">
-                    <button onclick="filterMenu('all')" class="bg-amber-600 text-stone-950 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">全部品項</button>
-                    <button onclick="filterMenu('main')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">主食特餐</button>
-                    <button onclick="filterMenu('side')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">台式小菜</button>
-                    <button onclick="filterMenu('dessert')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">甜點</button>
-                    <button onclick="filterMenu('drink')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">台灣飲品</button>
+                    <button onclick="filterMenu('all', this)" class="bg-amber-600 text-stone-950 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">全部品項</button>
+                    <button onclick="filterMenu('main', this)" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">主食特餐</button>
+                    <button onclick="filterMenu('side', this)" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">台式小菜</button>
+                    <button onclick="filterMenu('dessert', this)" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">甜點</button>
+                    <button onclick="filterMenu('drink', this)" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">台灣飲品</button>
                 </div>
 
                 <!-- 菜單 POS 按鈕網格 -->
@@ -471,9 +471,9 @@
             });
         }
 
-        function filterMenu(cat) {
+        function filterMenu(cat, selectedTab) {
             document.querySelectorAll('.category-tab').forEach(b => b.className = "bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab");
-            event.target.className = "bg-amber-600 text-stone-950 font-bold px-3 py-1.5 rounded-lg text-xs category-tab";
+            selectedTab.className = "bg-amber-600 text-stone-950 font-bold px-3 py-1.5 rounded-lg text-xs category-tab";
             renderMenu(cat);
         }
 
