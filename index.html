@@ -95,8 +95,9 @@
                 <div class="flex space-x-2 mb-4 border-b border-stone-700 pb-2">
                     <button onclick="filterMenu('all')" class="bg-amber-600 text-stone-950 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">全部品項</button>
                     <button onclick="filterMenu('main')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">主食特餐</button>
-                    <button onclick="filterMenu('side')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">炸物小食</button>
-                    <button onclick="filterMenu('drink')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">手搖飲品</button>
+                    <button onclick="filterMenu('side')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">台式小菜</button>
+                    <button onclick="filterMenu('dessert')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">甜點</button>
+                    <button onclick="filterMenu('drink')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">台灣飲品</button>
                 </div>
 
                 <!-- 菜單 POS 按鈕網格 -->
@@ -153,14 +154,71 @@
             { id: 9, name: "鮮榨柳橙汁", category: "drink", price: 90, emoji: "🧃" },
             { id: 10, name: "草莓奶昔", category: "drink", price: 110, emoji: "🥤" },
             { id: 11, name: "炙燒鮭魚排", category: "main", price: 320, emoji: "🐟" },
-            { id: 12, name: "凱薩沙拉", category: "side", price: 140, emoji: "🥗" }
+            { id: 12, name: "凱薩沙拉", category: "side", price: 140, emoji: "🥗" },
+            // 台灣風味主食（新增 20 種）
+            { id: 13, name: "滷肉飯", category: "main", price: 65, emoji: "🍚" },
+            { id: 14, name: "雞肉飯", category: "main", price: 75, emoji: "🍚" },
+            { id: 15, name: "排骨飯", category: "main", price: 120, emoji: "🍱" },
+            { id: 16, name: "控肉飯", category: "main", price: 115, emoji: "🍱" },
+            { id: 17, name: "香煎雞腿便當", category: "main", price: 135, emoji: "🍱" },
+            { id: 18, name: "滷排骨便當", category: "main", price: 130, emoji: "🍱" },
+            { id: 19, name: "三杯雞飯", category: "main", price: 145, emoji: "🍗" },
+            { id: 20, name: "麻油雞麵線", category: "main", price: 150, emoji: "🍜" },
+            { id: 21, name: "牛肉麵", category: "main", price: 180, emoji: "🍜" },
+            { id: 22, name: "牛肉湯麵", category: "main", price: 130, emoji: "🍜" },
+            { id: 23, name: "擔仔麵", category: "main", price: 85, emoji: "🍜" },
+            { id: 24, name: "蚵仔麵線", category: "main", price: 80, emoji: "🥣" },
+            { id: 25, name: "炒米粉", category: "main", price: 75, emoji: "🍜" },
+            { id: 26, name: "客家粄條", category: "main", price: 100, emoji: "🍜" },
+            { id: 27, name: "蝦仁蛋炒飯", category: "main", price: 120, emoji: "🍳" },
+            { id: 28, name: "台式肉絲炒麵", category: "main", price: 110, emoji: "🍜" },
+            { id: 29, name: "虱目魚肚粥", category: "main", price: 140, emoji: "🥣" },
+            { id: 30, name: "鹹粥配炸蚵仔", category: "main", price: 135, emoji: "🥣" },
+            { id: 31, name: "刈包", category: "main", price: 75, emoji: "🥙" },
+            { id: 32, name: "大腸包小腸", category: "main", price: 85, emoji: "🌭" },
+            // 台式小菜（新增 10 種）
+            { id: 33, name: "燙青菜", category: "side", price: 45, emoji: "🥬" },
+            { id: 34, name: "滷豆干海帶", category: "side", price: 50, emoji: "🍢" },
+            { id: 35, name: "皮蛋豆腐", category: "side", price: 55, emoji: "🥚" },
+            { id: 36, name: "涼拌小黃瓜", category: "side", price: 40, emoji: "🥒" },
+            { id: 37, name: "台式泡菜", category: "side", price: 40, emoji: "🥗" },
+            { id: 38, name: "滷白菜", category: "side", price: 45, emoji: "🥬" },
+            { id: 39, name: "茶葉蛋", category: "side", price: 20, emoji: "🥚" },
+            { id: 40, name: "炸甜不辣", category: "side", price: 60, emoji: "🍢" },
+            { id: 41, name: "香煎菜脯蛋", category: "side", price: 65, emoji: "🍳" },
+            { id: 42, name: "蒜泥白肉", category: "side", price: 90, emoji: "🥩" },
+            // 甜點（新增 8 種）
+            { id: 43, name: "芋圓豆花", category: "dessert", price: 65, emoji: "🍨" },
+            { id: 44, name: "花生豆花", category: "dessert", price: 55, emoji: "🍨" },
+            { id: 45, name: "仙草凍", category: "dessert", price: 45, emoji: "🍮" },
+            { id: 46, name: "紅豆湯圓", category: "dessert", price: 60, emoji: "🍡" },
+            { id: 47, name: "芋頭西米露", category: "dessert", price: 65, emoji: "🥣" },
+            { id: 48, name: "鳳梨酥", category: "dessert", price: 35, emoji: "🥮" },
+            { id: 49, name: "古早味布丁", category: "dessert", price: 50, emoji: "🍮" },
+            { id: 50, name: "地瓜球", category: "dessert", price: 50, emoji: "🟠" },
+            // 飲品（新增 15 種）
+            { id: 51, name: "珍珠奶茶", category: "drink", price: 65, emoji: "🧋" },
+            { id: 52, name: "四季春茶", category: "drink", price: 35, emoji: "🍵" },
+            { id: 53, name: "高山烏龍茶", category: "drink", price: 45, emoji: "🍵" },
+            { id: 54, name: "冬瓜茶", category: "drink", price: 35, emoji: "🥤" },
+            { id: 55, name: "古早味紅茶", category: "drink", price: 30, emoji: "🧋" },
+            { id: 56, name: "豆漿", category: "drink", price: 30, emoji: "🥛" },
+            { id: 57, name: "米漿", category: "drink", price: 35, emoji: "🥛" },
+            { id: 58, name: "青草茶", category: "drink", price: 40, emoji: "🍵" },
+            { id: 59, name: "仙草茶", category: "drink", price: 40, emoji: "🥤" },
+            { id: 60, name: "檸檬愛玉", category: "drink", price: 55, emoji: "🍋" },
+            { id: 61, name: "冬瓜檸檬", category: "drink", price: 50, emoji: "🍋" },
+            { id: 62, name: "楊桃汁", category: "drink", price: 55, emoji: "🧃" },
+            { id: 63, name: "木瓜牛奶", category: "drink", price: 70, emoji: "🥛" },
+            { id: 64, name: "芭樂檸檬汁", category: "drink", price: 65, emoji: "🧃" },
+            { id: 65, name: "台灣啤酒", category: "drink", price: 75, emoji: "🍺" }
         ];
 
         const customerTypes = [
-            { name: "上班族小陳", wishItem: "招牌牛肉堡", drink: "經典冰美式" },
-            { name: "大學生小美", wishItem: "奶油蘑菇義大利麵", drink: "黑糖珍珠鮮奶" },
-            { name: "美食家王大哥", wishItem: "炙燒鮭魚排", drink: "鮮榨柳橙汁" },
-            { name: "家庭主婦陳太太", wishItem: "夏威夷鮮蝦披薩", drink: "酥皮濃湯" }
+            { name: "上班族小陳", wishItem: "滷肉飯", drink: "古早味紅茶" },
+            { name: "大學生小美", wishItem: "蝦仁蛋炒飯", drink: "珍珠奶茶" },
+            { name: "美食家王大哥", wishItem: "牛肉麵", drink: "高山烏龍茶" },
+            { name: "家庭主婦陳太太", wishItem: "香煎雞腿便當", drink: "冬瓜檸檬" }
         ];
 
         function renderMenu(category = 'all') {
