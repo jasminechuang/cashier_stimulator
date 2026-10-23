@@ -43,14 +43,19 @@
             <div>
                 <div class="flex justify-between items-center mb-3 border-b border-stone-700 pb-2">
                     <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">當前客人的點餐清單</span>
-                    <span id="order-status" class="text-xs bg-amber-950 text-amber-300 px-2 py-0.5 rounded font-bold">等待客人入座</span>
+                    <div class="flex items-center gap-2">
+                        <span id="order-type" class="hidden text-xs bg-stone-700 text-stone-300 px-2 py-1 rounded-lg font-black tracking-wide" aria-live="polite"></span>
+                        <span id="order-status" class="text-xs bg-amber-950 text-amber-300 px-2 py-0.5 rounded font-bold">等待客人入座</span>
+                    </div>
                 </div>
 
                 <!-- 顧客需求提示 -->
                 <div class="bg-stone-900 rounded-xl p-3 mb-3 border border-stone-700">
-                    <p class="text-xs text-stone-300 font-bold mb-1">💬 顧客口頭需求：</p>
+                    <p id="customer-wish-label" class="text-xs text-stone-300 font-bold mb-1">💬 顧客口頭需求：</p>
                     <p id="customer-wish" class="text-xs text-amber-200 italic">「請點擊下方按鈕迎接第一位客人入座點餐！」</p>
                 </div>
+
+                <div id="pickup-notice" class="hidden bg-sky-950 border-2 border-sky-500 rounded-xl p-3 mb-3 text-sky-100" aria-live="polite"></div>
 
                 <!-- 已點餐點明細表 -->
                 <div class="bg-stone-900 rounded-xl p-3 border border-stone-700 h-64 overflow-y-auto mb-3">
@@ -95,8 +100,9 @@
                 <div class="flex space-x-2 mb-4 border-b border-stone-700 pb-2">
                     <button onclick="filterMenu('all')" class="bg-amber-600 text-stone-950 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">全部品項</button>
                     <button onclick="filterMenu('main')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">主食特餐</button>
-                    <button onclick="filterMenu('side')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">炸物小食</button>
-                    <button onclick="filterMenu('drink')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">手搖飲品</button>
+                    <button onclick="filterMenu('side')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">台式小菜</button>
+                    <button onclick="filterMenu('dessert')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">甜點</button>
+                    <button onclick="filterMenu('drink')" class="bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab">台灣飲品</button>
                 </div>
 
                 <!-- 菜單 POS 按鈕網格 -->
@@ -151,9 +157,11 @@
         let ratingScore = 5.0;
         let servedCount = 0;
         let currentCustomer = null;
+        let isDeliveryOrder = false;
         let cart = [];
 
         const menuItems = [
+            // 經典餐點（供原有客人點餐）
             { id: 1, name: "招牌牛肉堡", category: "main", price: 180, emoji: "🍔" },
             { id: 2, name: "黃金起司薯條", category: "side", price: 90, emoji: "🍟" },
             { id: 3, name: "日式炸雞塊", category: "side", price: 120, emoji: "🍗" },
@@ -165,14 +173,71 @@
             { id: 9, name: "鮮榨柳橙汁", category: "drink", price: 90, emoji: "🧃" },
             { id: 10, name: "草莓奶昔", category: "drink", price: 110, emoji: "🥤" },
             { id: 11, name: "炙燒鮭魚排", category: "main", price: 320, emoji: "🐟" },
-            { id: 12, name: "凱薩沙拉", category: "side", price: 140, emoji: "🥗" }
+            { id: 12, name: "凱薩沙拉", category: "side", price: 140, emoji: "🥗" },
+            // 台灣風味主食（新增 20 種）
+            { id: 13, name: "滷肉飯", category: "main", price: 65, emoji: "🍚" },
+            { id: 14, name: "雞肉飯", category: "main", price: 75, emoji: "🍚" },
+            { id: 15, name: "排骨飯", category: "main", price: 120, emoji: "🍱" },
+            { id: 16, name: "控肉飯", category: "main", price: 115, emoji: "🍱" },
+            { id: 17, name: "香煎雞腿便當", category: "main", price: 135, emoji: "🍱" },
+            { id: 18, name: "滷排骨便當", category: "main", price: 130, emoji: "🍱" },
+            { id: 19, name: "三杯雞飯", category: "main", price: 145, emoji: "🍗" },
+            { id: 20, name: "麻油雞麵線", category: "main", price: 150, emoji: "🍜" },
+            { id: 21, name: "牛肉麵", category: "main", price: 180, emoji: "🍜" },
+            { id: 22, name: "牛肉湯麵", category: "main", price: 130, emoji: "🍜" },
+            { id: 23, name: "擔仔麵", category: "main", price: 85, emoji: "🍜" },
+            { id: 24, name: "蚵仔麵線", category: "main", price: 80, emoji: "🥣" },
+            { id: 25, name: "炒米粉", category: "main", price: 75, emoji: "🍜" },
+            { id: 26, name: "客家粄條", category: "main", price: 100, emoji: "🍜" },
+            { id: 27, name: "蝦仁蛋炒飯", category: "main", price: 120, emoji: "🍳" },
+            { id: 28, name: "台式肉絲炒麵", category: "main", price: 110, emoji: "🍜" },
+            { id: 29, name: "虱目魚肚粥", category: "main", price: 140, emoji: "🥣" },
+            { id: 30, name: "鹹粥配炸蚵仔", category: "main", price: 135, emoji: "🥣" },
+            { id: 31, name: "刈包", category: "main", price: 75, emoji: "🥙" },
+            { id: 32, name: "大腸包小腸", category: "main", price: 85, emoji: "🌭" },
+            // 台式小菜（新增 10 種）
+            { id: 33, name: "燙青菜", category: "side", price: 45, emoji: "🥬" },
+            { id: 34, name: "滷豆干海帶", category: "side", price: 50, emoji: "🍢" },
+            { id: 35, name: "皮蛋豆腐", category: "side", price: 55, emoji: "🥚" },
+            { id: 36, name: "涼拌小黃瓜", category: "side", price: 40, emoji: "🥒" },
+            { id: 37, name: "台式泡菜", category: "side", price: 40, emoji: "🥗" },
+            { id: 38, name: "滷白菜", category: "side", price: 45, emoji: "🥬" },
+            { id: 39, name: "茶葉蛋", category: "side", price: 20, emoji: "🥚" },
+            { id: 40, name: "炸甜不辣", category: "side", price: 60, emoji: "🍢" },
+            { id: 41, name: "香煎菜脯蛋", category: "side", price: 65, emoji: "🍳" },
+            { id: 42, name: "蒜泥白肉", category: "side", price: 90, emoji: "🥩" },
+            // 甜點（新增 8 種）
+            { id: 43, name: "芋圓豆花", category: "dessert", price: 65, emoji: "🍨" },
+            { id: 44, name: "花生豆花", category: "dessert", price: 55, emoji: "🍨" },
+            { id: 45, name: "仙草凍", category: "dessert", price: 45, emoji: "🍮" },
+            { id: 46, name: "紅豆湯圓", category: "dessert", price: 60, emoji: "🍡" },
+            { id: 47, name: "芋頭西米露", category: "dessert", price: 65, emoji: "🥣" },
+            { id: 48, name: "鳳梨酥", category: "dessert", price: 35, emoji: "🥮" },
+            { id: 49, name: "古早味布丁", category: "dessert", price: 50, emoji: "🍮" },
+            { id: 50, name: "地瓜球", category: "dessert", price: 50, emoji: "🟠" },
+            // 飲品（新增 15 種）
+            { id: 51, name: "珍珠奶茶", category: "drink", price: 65, emoji: "🧋" },
+            { id: 52, name: "四季春茶", category: "drink", price: 35, emoji: "🍵" },
+            { id: 53, name: "高山烏龍茶", category: "drink", price: 45, emoji: "🍵" },
+            { id: 54, name: "冬瓜茶", category: "drink", price: 35, emoji: "🥤" },
+            { id: 55, name: "古早味紅茶", category: "drink", price: 30, emoji: "🧋" },
+            { id: 56, name: "豆漿", category: "drink", price: 30, emoji: "🥛" },
+            { id: 57, name: "米漿", category: "drink", price: 35, emoji: "🥛" },
+            { id: 58, name: "青草茶", category: "drink", price: 40, emoji: "🍵" },
+            { id: 59, name: "仙草茶", category: "drink", price: 40, emoji: "🥤" },
+            { id: 60, name: "檸檬愛玉", category: "drink", price: 55, emoji: "🍋" },
+            { id: 61, name: "冬瓜檸檬", category: "drink", price: 50, emoji: "🍋" },
+            { id: 62, name: "楊桃汁", category: "drink", price: 55, emoji: "🧃" },
+            { id: 63, name: "木瓜牛奶", category: "drink", price: 70, emoji: "🥛" },
+            { id: 64, name: "芭樂檸檬汁", category: "drink", price: 65, emoji: "🧃" },
+            { id: 65, name: "台灣啤酒", category: "drink", price: 75, emoji: "🍺" }
         ];
 
         const customerTypes = [
-            { id: "chen", name: "小陳", occupation: "上班族", emoji: "🧑🏻‍💻", color: "sky", wishItem: "招牌牛肉堡", drink: "經典冰美式", likes: "效率滿分的午休、冰美式和準時下班", quote: "今天也要用美食補充電力！" },
-            { id: "mei", name: "小美", occupation: "大學生", emoji: "👩🏻‍🎓", color: "pink", wishItem: "奶油蘑菇義大利麵", drink: "黑糖珍珠鮮奶", likes: "和朋友分享美食、甜甜的珍珠奶茶", quote: "這家店好適合拍照打卡～" },
-            { id: "wang", name: "王大哥", occupation: "美食家", emoji: "🧑🏻‍🍳", color: "amber", wishItem: "炙燒鮭魚排", drink: "鮮榨柳橙汁", likes: "探索新口味、細細品嚐食材", quote: "讓我看看今天有什麼好料！" },
-            { id: "chen_mom", name: "陳太太", occupation: "家庭主婦", emoji: "👩🏻‍🍼", color: "rose", wishItem: "夏威夷鮮蝦披薩", drink: "酥皮濃湯", likes: "熱鬧的家庭聚餐和香噴噴的披薩", quote: "孩子們最喜歡一起吃披薩了！" },
+            { id: "chen", name: "上班族小陳", occupation: "上班族", emoji: "🧑🏻‍💻", color: "sky", wishItem: "滷肉飯", drink: "古早味紅茶", likes: "效率滿分的午休、滷肉飯和準時下班", quote: "今天也要用美食補充電力！" },
+            { id: "mei", name: "大學生小美", occupation: "大學生", emoji: "👩🏻‍🎓", color: "pink", wishItem: "蝦仁蛋炒飯", drink: "珍珠奶茶", likes: "和朋友分享美食、炒飯和甜甜的珍珠奶茶", quote: "這家店好適合拍照打卡～" },
+            { id: "wang", name: "美食家王大哥", occupation: "美食家", emoji: "🧑🏻‍🍳", color: "amber", wishItem: "牛肉麵", drink: "高山烏龍茶", likes: "探索新口味、細細品嚐牛肉麵和茶", quote: "讓我看看今天有什麼好料！" },
+            { id: "chen_mom", name: "家庭主婦陳太太", occupation: "家庭主婦", emoji: "👩🏻‍🍼", color: "rose", wishItem: "香煎雞腿便當", drink: "冬瓜檸檬", likes: "熱鬧的家庭聚餐和香煎雞腿便當", quote: "孩子們最喜歡一起吃便當了！" },
             { id: "yoyo", name: "悠悠", occupation: "幼稚園老師", emoji: "👩🏻‍🏫", color: "violet", wishItem: "凱薩沙拉", drink: "草莓奶昔", likes: "可愛的小點心、草莓和假日野餐", quote: "忙完一天，要來點甜甜的獎勵！" },
             { id: "bo", name: "阿波", occupation: "郵差", emoji: "🧑🏻‍🚴", color: "emerald", wishItem: "日式炸雞塊", drink: "鮮榨柳橙汁", likes: "騎車兜風、補充元氣的炸雞", quote: "跑了一整天，這香味也太棒了！" },
             { id: "lin", name: "林奶奶", occupation: "退休老師", emoji: "👵🏻", color: "orange", wishItem: "奶油蘑菇義大利麵", drink: "經典冰美式", likes: "看書、種花，還有和老朋友喝咖啡", quote: "今天也要好好享受悠閒時光。" },
@@ -289,16 +354,30 @@
         }
 
         function nextCustomer() {
-            currentCustomer = customerTypes[Math.floor(Math.random() * customerTypes.length)];
+            isDeliveryOrder = Math.random() < 0.3;
+            currentCustomer = { ...customerTypes[Math.floor(Math.random() * customerTypes.length)] };
             unlockedCustomers.add(currentCustomer.id);
             localStorage.setItem('unlockedCustomers', JSON.stringify([...unlockedCustomers]));
             renderAlbum();
             cart = [];
             updateCartUI();
 
-            document.getElementById('order-status').innerText = "點餐中...";
-            document.getElementById('order-status').className = "text-xs bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded font-bold";
-            document.getElementById('customer-wish').innerText = `「${currentCustomer.quote} 我想要一份 ${currentCustomer.wishItem} 和一杯 ${currentCustomer.drink}，謝謝！」`;
+            const orderType = document.getElementById('order-type');
+            orderType.className = isDeliveryOrder
+                ? "text-sm bg-sky-500 text-sky-950 px-3 py-1.5 rounded-lg font-black tracking-wide shadow"
+                : "text-sm bg-amber-400 text-stone-950 px-3 py-1.5 rounded-lg font-black tracking-wide shadow";
+            orderType.innerText = isDeliveryOrder ? "🛵 Uber 外送｜外送員取餐" : "🍽️ 內用｜客人入座";
+            orderType.classList.remove('hidden');
+            document.getElementById('pickup-notice').classList.add('hidden');
+
+            document.getElementById('order-status').innerText = isDeliveryOrder ? "外送訂單製作中" : "點餐中...";
+            document.getElementById('order-status').className = isDeliveryOrder
+                ? "text-xs bg-sky-950 text-sky-200 px-2 py-1 rounded font-black"
+                : "text-xs bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded font-bold";
+            document.getElementById('customer-wish-label').innerText = isDeliveryOrder ? "📱 Uber Eats 外送訂單：" : "💬 顧客口頭需求：";
+            document.getElementById('customer-wish').innerText = isDeliveryOrder
+                ? `外送單 #${Math.floor(1000 + Math.random() * 9000)}：${currentCustomer.wishItem} 和 ${currentCustomer.drink}。完成後交給到店外送員。`
+                : `「${currentCustomer.quote} 我想要一份 ${currentCustomer.wishItem} 和一杯 ${currentCustomer.drink}，謝謝！」`;
             
             document.getElementById('checkout-btn').disabled = false;
             document.getElementById('checkout-btn').className = "flex-1 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-black py-2.5 px-4 rounded-xl text-xs shadow cursor-pointer transition pos-btn";
@@ -350,6 +429,10 @@
                 alert("尚未點選任何餐點！");
                 return;
             }
+            if (isDeliveryOrder) {
+                confirmCheckout();
+                return;
+            }
             const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
             document.getElementById('modal-total-text').innerText = `應收金額：$${total}`;
             document.getElementById('cash-given').value = total + 100;
@@ -366,7 +449,7 @@
             if (!currentCustomer) return;
 
             const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-            const cash = parseInt(document.getElementById('cash-given').value);
+            const cash = isDeliveryOrder ? total : parseInt(document.getElementById('cash-given').value);
 
             if (isNaN(cash) || cash < total) {
                 alert("客人給的現金不足或金額輸入錯誤！");
@@ -379,7 +462,7 @@
 
             const hasMain = cart.some(i => i.name === currentCustomer.wishItem);
             const hasDrink = cart.some(i => i.name === currentCustomer.drink);
-            let feedback = "結帳成功！客人非常滿意您的服務！⭐⭐⭐⭐⭐";
+            let feedback = isDeliveryOrder ? "外送餐點已完成，請交給到店外送員。" : "結帳成功！客人非常滿意您的服務！⭐⭐⭐⭐⭐";
             
             if (!hasMain || !hasDrink) {
                 ratingScore = Math.max(1.0, ratingScore - 0.3);
@@ -390,8 +473,15 @@
             document.getElementById('total-revenue').innerText = `$${revenue}`;
             document.getElementById('waiter-rating').innerText = `⭐ ${ratingScore.toFixed(1)}`;
             document.getElementById('customer-wish').innerText = feedback;
-            document.getElementById('order-status').innerText = "結帳完成";
-            document.getElementById('order-status').className = "text-xs bg-stone-700 text-stone-300 px-2 py-0.5 rounded font-bold";
+            document.getElementById('order-status').innerText = isDeliveryOrder ? "外送員已取餐" : "結帳完成";
+            document.getElementById('order-status').className = isDeliveryOrder
+                ? "text-xs bg-sky-500 text-sky-950 px-2 py-1 rounded font-black"
+                : "text-xs bg-stone-700 text-stone-300 px-2 py-0.5 rounded font-bold";
+            if (isDeliveryOrder) {
+                const notice = document.getElementById('pickup-notice');
+                notice.innerHTML = `<p class="font-black text-base">🛵 外送員已到店取餐</p><p class="text-sm mt-1">Uber Eats 訂單已交付外送員，可準備下一筆訂單。</p>`;
+                notice.classList.remove('hidden');
+            }
 
             // 關閉 Modal
             closeCheckoutModal();
@@ -402,7 +492,7 @@
             document.getElementById('next-customer-btn').disabled = false;
             document.getElementById('next-customer-btn').className = "bg-amber-600 hover:bg-amber-500 text-stone-950 font-black py-2.5 px-4 rounded-xl text-xs shadow cursor-pointer transition pos-btn";
             
-            alert(`結帳完成！找零：$${change}`);
+            if (!isDeliveryOrder) alert(`結帳完成！找零：$${change}`);
             currentCustomer = null;
         }
 
