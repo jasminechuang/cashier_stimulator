@@ -37,6 +37,28 @@
 
     <!-- 主 POS 畫面：左側點餐明細，右側菜單按鈕 -->
     <main class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-12 gap-6 mb-4">
+        <!-- 每日任務 -->
+        <section class="md:col-span-12 bg-stone-800 shadow-xl rounded-2xl p-4 border border-amber-700/50" aria-labelledby="daily-task-title">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 id="daily-task-title" class="text-sm font-black text-amber-400">📋 每日任務</h2>
+                        <span id="daily-task-level" class="text-[10px] bg-amber-950 text-amber-300 px-2 py-0.5 rounded font-bold">第 1 關</span>
+                    </div>
+                    <p id="daily-task-description" class="text-xs text-stone-300 mt-1">完成 3 筆訂單，開始今天的挑戰！</p>
+                </div>
+                <button onclick="openLevelModal()" class="bg-stone-900 hover:bg-stone-700 border border-stone-600 text-stone-200 font-bold px-3 py-2 rounded-lg text-xs">🗺️ 關卡回顧／挑戰</button>
+                <div class="sm:w-1/2">
+                    <div class="flex justify-between text-[10px] text-stone-400 font-bold mb-1">
+                        <span id="daily-task-progress-text">今日訂單 0 / 3</span>
+                        <span id="daily-task-percent">0%</span>
+                    </div>
+                    <div class="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
+                        <div id="daily-task-progress" class="h-full bg-amber-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
         
         <!-- 左側：收銀機明細與結帳區 (5格寬) -->
         <div class="md:col-span-5 bg-stone-800 shadow-2xl rounded-2xl p-5 border border-stone-700 flex flex-col justify-between">
@@ -151,14 +173,116 @@
         </div>
     </div>
 
+    <!-- 關卡回顧與重玩 Modal -->
+    <div id="level-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="level-modal-title">
+        <div class="bg-stone-800 border border-amber-500/50 rounded-3xl p-5 max-w-lg w-full shadow-2xl max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center mb-3">
+                <div>
+                    <h3 id="level-modal-title" class="text-base font-black text-amber-400">🗺️ 關卡回顧與挑戰</h3>
+                    <p class="text-xs text-stone-400 mt-1">可重玩已完成關卡；重玩不會影響今日進度。</p>
+                </div>
+                <button onclick="closeLevelModal()" class="text-stone-400 hover:text-white text-xl px-2" aria-label="關閉">×</button>
+            </div>
+            <div id="level-list" class="overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+        </div>
+    </div>
+
     <!-- 遊戲邏輯 Script -->
     <script>
         let revenue = 0;
         let ratingScore = 5.0;
         let servedCount = 0;
+        let dailyOrders = 0;
+        let dailyTaskLevel = 1;
+        let activeTaskLevel = 1;
+        let challengeOrders = 0;
+        const MAX_DAILY_TASK_LEVEL = 300;
+        let dailyTaskDate = new Date().toLocaleDateString('en-CA');
         let currentCustomer = null;
         let isDeliveryOrder = false;
         let cart = [];
+
+        function getDailyTaskTarget(level) {
+            return 10 + Math.floor((level - 1) / 10);
+        }
+
+        function loadDailyTask() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('cashierDailyTask') || 'null');
+                if (saved && saved.date === dailyTaskDate) {
+                    dailyOrders = Number(saved.orders) || 0;
+                    dailyTaskLevel = Math.min(MAX_DAILY_TASK_LEVEL, Math.max(1, Number(saved.level) || 1));
+                }
+            } catch (error) {
+                dailyOrders = 0;
+                dailyTaskLevel = 1;
+            }
+            activeTaskLevel = dailyTaskLevel;
+            challengeOrders = dailyOrders;
+            renderDailyTask();
+        }
+
+        function renderDailyTask() {
+            const target = getDailyTaskTarget(activeTaskLevel);
+            const progress = Math.min(challengeOrders, target);
+            const percent = Math.floor(progress / target * 100);
+            document.getElementById('daily-task-level').innerText = `第 ${activeTaskLevel} 關`;
+            document.getElementById('daily-task-description').innerText = `再完成 ${Math.max(0, target - progress)} 筆訂單即可通過本關`;
+            document.getElementById('daily-task-progress-text').innerText = `本關訂單 ${progress} / ${target}`;
+            document.getElementById('daily-task-percent').innerText = `${percent}%`;
+            document.getElementById('daily-task-progress').style.width = `${percent}%`;
+        }
+
+        function openLevelModal() {
+            const list = document.getElementById('level-list');
+            list.innerHTML = '';
+            for (let level = 1; level <= MAX_DAILY_TASK_LEVEL; level++) {
+                const completed = level < dailyTaskLevel;
+                const available = level === dailyTaskLevel;
+                const button = document.createElement('button');
+                button.disabled = !completed && !available;
+                button.className = `text-left p-3 rounded-xl border ${button.disabled ? 'bg-stone-900 border-stone-800 text-stone-600 cursor-not-allowed' : 'bg-stone-900 border-stone-700 hover:border-amber-500 text-stone-200 cursor-pointer'}`;
+                const state = completed ? '✅ 已完成・可重玩' : available ? '⭐ 目前關卡' : '🔒 尚未解鎖';
+                button.innerHTML = `<span class="block text-sm font-black">第 ${level} 關 <span class="text-[10px] font-bold">${state}</span></span><span class="block text-xs text-stone-400 mt-1">完成 ${getDailyTaskTarget(level)} 筆訂單</span>`;
+                if (!button.disabled) button.onclick = () => startLevelChallenge(level);
+                list.appendChild(button);
+            }
+            document.getElementById('level-modal').classList.remove('hidden');
+            document.getElementById('level-modal').classList.add('flex');
+        }
+
+        function closeLevelModal() {
+            document.getElementById('level-modal').classList.add('hidden');
+            document.getElementById('level-modal').classList.remove('flex');
+        }
+
+        function startLevelChallenge(level) {
+            activeTaskLevel = level;
+            challengeOrders = level === dailyTaskLevel ? dailyOrders : 0;
+            renderDailyTask();
+            closeLevelModal();
+        }
+
+        function saveDailyTask() {
+            try {
+                localStorage.setItem('cashierDailyTask', JSON.stringify({ date: dailyTaskDate, orders: dailyOrders, level: dailyTaskLevel }));
+            } catch (error) {
+                // 任務仍可在目前分頁遊玩，僅無法跨重新載入保存。
+            }
+        }
+
+        function ensureCurrentDay() {
+            const today = new Date().toLocaleDateString('en-CA');
+            if (today !== dailyTaskDate) {
+                dailyTaskDate = today;
+                dailyOrders = 0;
+                dailyTaskLevel = 1;
+                activeTaskLevel = 1;
+                challengeOrders = 0;
+                saveDailyTask();
+                renderDailyTask();
+            }
+        }
 
         const menuItems = [
             // 經典餐點（供原有客人點餐）
@@ -447,6 +571,7 @@
 
         function confirmCheckout() {
             if (!currentCustomer) return;
+            ensureCurrentDay();
 
             const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
             const cash = isDeliveryOrder ? total : parseInt(document.getElementById('cash-given').value);
@@ -459,6 +584,27 @@
             const change = cash - total;
             revenue += total;
             servedCount++;
+            dailyOrders++;
+            challengeOrders++;
+            const taskTarget = getDailyTaskTarget(activeTaskLevel);
+            let taskMessage = '';
+            if (challengeOrders >= taskTarget) {
+                taskMessage = `\n🎉 第 ${activeTaskLevel} 關完成！`;
+                if (activeTaskLevel === dailyTaskLevel) {
+                    taskMessage += ' 已解鎖下一關！';
+                    dailyOrders = 0;
+                    dailyTaskLevel = Math.min(MAX_DAILY_TASK_LEVEL, dailyTaskLevel + 1);
+                    activeTaskLevel = dailyTaskLevel;
+                    challengeOrders = 0;
+                } else {
+                    challengeOrders = 0;
+                }
+            }
+            if (activeTaskLevel === dailyTaskLevel) {
+                dailyOrders = challengeOrders;
+            }
+            saveDailyTask();
+            renderDailyTask();
 
             const hasMain = cart.some(i => i.name === currentCustomer.wishItem);
             const hasDrink = cart.some(i => i.name === currentCustomer.drink);
@@ -492,10 +638,15 @@
             document.getElementById('next-customer-btn').disabled = false;
             document.getElementById('next-customer-btn').className = "bg-amber-600 hover:bg-amber-500 text-stone-950 font-black py-2.5 px-4 rounded-xl text-xs shadow cursor-pointer transition pos-btn";
             
-            if (!isDeliveryOrder) alert(`結帳完成！找零：$${change}`);
+            if (!isDeliveryOrder) {
+                alert(`結帳完成！找零：$${change}${taskMessage}`);
+            } else if (taskMessage) {
+                alert(taskMessage.trim());
+            }
             currentCustomer = null;
         }
 
+        loadDailyTask();
         renderMenu();
         renderAlbum();
     </script>
