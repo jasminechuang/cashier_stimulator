@@ -210,7 +210,6 @@
             try {
                 const saved = JSON.parse(localStorage.getItem('cashierDailyTask') || 'null');
                 if (saved && saved.date === dailyTaskDate) {
-                    dailyOrders = Number(saved.orders) || 0;
                     dailyTaskLevel = Math.min(MAX_DAILY_TASK_LEVEL, Math.max(1, Number(saved.level) || 1));
                 }
             } catch (error) {
@@ -218,7 +217,9 @@
                 dailyTaskLevel = 1;
             }
             activeTaskLevel = dailyTaskLevel;
-            challengeOrders = dailyOrders;
+            dailyOrders = 0;
+            challengeOrders = 0;
+            saveDailyTask();
             renderDailyTask();
         }
 
@@ -258,7 +259,11 @@
 
         function startLevelChallenge(level) {
             activeTaskLevel = level;
-            challengeOrders = level === dailyTaskLevel ? dailyOrders : 0;
+            challengeOrders = 0;
+            if (level === dailyTaskLevel) {
+                dailyOrders = 0;
+                saveDailyTask();
+            }
             renderDailyTask();
             closeLevelModal();
         }
@@ -286,18 +291,18 @@
 
         const menuItems = [
             // 經典餐點（供原有客人點餐）
-            { id: 1, name: "招牌牛肉堡", category: "main", price: 180, emoji: "🍔" },
-            { id: 2, name: "黃金起司薯條", category: "side", price: 90, emoji: "🍟" },
-            { id: 3, name: "日式炸雞塊", category: "side", price: 120, emoji: "🍗" },
-            { id: 4, name: "黑糖珍珠鮮奶", category: "drink", price: 85, emoji: "🧋" },
-            { id: 5, name: "經典冰美式", category: "drink", price: 75, emoji: "☕" },
-            { id: 6, name: "奶油蘑菇義大利麵", category: "main", price: 220, emoji: "🍝" },
-            { id: 7, name: "夏威夷鮮蝦披薩", category: "main", price: 280, emoji: "🍕" },
-            { id: 8, name: "酥皮濃湯", category: "side", price: 80, emoji: "🥣" },
-            { id: 9, name: "鮮榨柳橙汁", category: "drink", price: 90, emoji: "🧃" },
-            { id: 10, name: "草莓奶昔", category: "drink", price: 110, emoji: "🥤" },
-            { id: 11, name: "炙燒鮭魚排", category: "main", price: 320, emoji: "🐟" },
-            { id: 12, name: "凱薩沙拉", category: "side", price: 140, emoji: "🥗" },
+            { id: 1, name: "滷肉飯", category: "main", price: 180, emoji: "🍚" },
+            { id: 2, name: "鹽酥雞", category: "side", price: 90, emoji: "🍗" },
+            { id: 3, name: "雞排", category: "side", price: 120, emoji: "🍗" },
+            { id: 4, name: "珍珠奶茶", category: "drink", price: 85, emoji: "🧋" },
+            { id: 5, name: "古早味紅茶", category: "drink", price: 75, emoji: "🍵" },
+            { id: 6, name: "牛肉麵", category: "main", price: 220, emoji: "🍜" },
+            { id: 7, name: "蔥油雞腿飯", category: "main", price: 280, emoji: "🍱" },
+            { id: 8, name: "四神湯", category: "side", price: 80, emoji: "🥣" },
+            { id: 9, name: "冬瓜檸檬", category: "drink", price: 90, emoji: "🧃" },
+            { id: 10, name: "木瓜牛奶", category: "drink", price: 110, emoji: "🥛" },
+            { id: 11, name: "虱目魚肚粥", category: "main", price: 320, emoji: "🐟" },
+            { id: 12, name: "涼拌小黃瓜", category: "side", price: 140, emoji: "🥗" },
             // 台灣風味主食（新增 20 種）
             { id: 13, name: "滷肉飯", category: "main", price: 65, emoji: "🍚" },
             { id: 14, name: "雞肉飯", category: "main", price: 75, emoji: "🍚" },
@@ -343,12 +348,12 @@
             { id: 51, name: "珍珠奶茶", category: "drink", price: 65, emoji: "🧋" },
             { id: 52, name: "四季春茶", category: "drink", price: 35, emoji: "🍵" },
             { id: 53, name: "高山烏龍茶", category: "drink", price: 45, emoji: "🍵" },
-            { id: 54, name: "冬瓜茶", category: "drink", price: 35, emoji: "🥤" },
+            { id: 54, name: "冬瓜茶", category: "drink", price: 35, emoji: "🥛" },
             { id: 55, name: "古早味紅茶", category: "drink", price: 30, emoji: "🧋" },
             { id: 56, name: "豆漿", category: "drink", price: 30, emoji: "🥛" },
             { id: 57, name: "米漿", category: "drink", price: 35, emoji: "🥛" },
             { id: 58, name: "青草茶", category: "drink", price: 40, emoji: "🍵" },
-            { id: 59, name: "仙草茶", category: "drink", price: 40, emoji: "🥤" },
+            { id: 59, name: "仙草茶", category: "drink", price: 40, emoji: "🥛" },
             { id: 60, name: "檸檬愛玉", category: "drink", price: 55, emoji: "🍋" },
             { id: 61, name: "冬瓜檸檬", category: "drink", price: 50, emoji: "🍋" },
             { id: 62, name: "楊桃汁", category: "drink", price: 55, emoji: "🧃" },
@@ -359,7 +364,7 @@
             { id: 66, name: "蔥油雞腿飯", category: "main", price: 145, emoji: "🍗" },
             { id: 67, name: "香菇雞湯麵", category: "main", price: 125, emoji: "🍜" },
             { id: 68, name: "麻辣鴨血臭豆腐", category: "main", price: 135, emoji: "🍲" },
-            { id: 69, name: "鮮蝦餛飩麵", category: "main", price: 115, emoji: "🍜" },
+            { id: 69, name: "台式餛飩麵", category: "main", price: 115, emoji: "🍜" },
             { id: 70, name: "蜜汁叉燒飯", category: "main", price: 130, emoji: "🍱" },
             { id: 71, name: "鮭魚茶泡飯", category: "main", price: 155, emoji: "🍚" },
             { id: 72, name: "番茄牛腩燴飯", category: "main", price: 165, emoji: "🍛" },
@@ -383,68 +388,68 @@
             { id: "mei", name: "大學生小美", occupation: "大學生", emoji: "👩🏻‍🎓", color: "pink", wishItem: "蝦仁蛋炒飯", drink: "珍珠奶茶", likes: "和朋友分享美食、炒飯和甜甜的珍珠奶茶", quote: "這家店好適合拍照打卡～" },
             { id: "wang", name: "美食家王大哥", occupation: "美食家", emoji: "🧑🏻‍🍳", color: "amber", wishItem: "牛肉麵", drink: "高山烏龍茶", likes: "探索新口味、細細品嚐牛肉麵和茶", quote: "讓我看看今天有什麼好料！" },
             { id: "chen_mom", name: "家庭主婦陳太太", occupation: "家庭主婦", emoji: "👩🏻‍🍼", color: "rose", wishItem: "香煎雞腿便當", drink: "冬瓜檸檬", likes: "熱鬧的家庭聚餐和香煎雞腿便當", quote: "孩子們最喜歡一起吃便當了！" },
-            { id: "yoyo", name: "悠悠", occupation: "幼稚園老師", emoji: "👩🏻‍🏫", color: "violet", wishItem: "凱薩沙拉", drink: "草莓奶昔", likes: "可愛的小點心、草莓和假日野餐", quote: "忙完一天，要來點甜甜的獎勵！" },
-            { id: "bo", name: "阿波", occupation: "郵差", emoji: "🧑🏻‍🚴", color: "emerald", wishItem: "日式炸雞塊", drink: "鮮榨柳橙汁", likes: "騎車兜風、補充元氣的炸雞", quote: "跑了一整天，這香味也太棒了！" },
-            { id: "lin", name: "林奶奶", occupation: "退休老師", emoji: "👵🏻", color: "orange", wishItem: "奶油蘑菇義大利麵", drink: "經典冰美式", likes: "看書、種花，還有和老朋友喝咖啡", quote: "今天也要好好享受悠閒時光。" },
-            { id: "momo", name: "毛毛", occupation: "插畫家", emoji: "🧑🏻‍🎨", color: "fuchsia", wishItem: "黃金起司薯條", drink: "黑糖珍珠鮮奶", likes: "畫畫找靈感、起司和繽紛的生活", quote: "美食也能給我好多創作靈感！" },
-            { id: "an", name: "安安", occupation: "護理師", emoji: "👩🏻‍⚕️", color: "rose", wishItem: "凱薩沙拉", drink: "鮮榨柳橙汁", likes: "清爽沙拉和下班後的陽光", quote: "忙碌的班後，想吃點清爽的！" },
-            { id: "kai", name: "凱文", occupation: "工程師", emoji: "👨🏻‍💻", color: "sky", wishItem: "招牌牛肉堡", drink: "草莓奶昔", likes: "寫程式、漢堡和甜甜的奶昔", quote: "今天的 bug 就交給漢堡解決！" },
-            { id: "yue", name: "小月", occupation: "舞者", emoji: "💃🏻", color: "pink", wishItem: "日式炸雞塊", drink: "鮮榨柳橙汁", likes: "跳舞、炸雞和酸甜果汁", quote: "練舞後最想來份炸雞！" },
-            { id: "dawei", name: "大偉", occupation: "消防員", emoji: "👨🏻‍🚒", color: "orange", wishItem: "炙燒鮭魚排", drink: "經典冰美式", likes: "戶外活動和香煎鮭魚", quote: "來一份有飽足感的餐點吧！" },
-            { id: "xuan", name: "小萱", occupation: "花店店員", emoji: "👩🏻‍🌾", color: "emerald", wishItem: "草莓奶昔", drink: "黑糖珍珠鮮奶", likes: "照顧花花草草和草莓甜點", quote: "今天也想過得甜甜的！" },
-            { id: "bojun", name: "柏鈞", occupation: "健身教練", emoji: "🏋🏻‍♂️", color: "lime", wishItem: "凱薩沙拉", drink: "經典冰美式", likes: "運動後的清爽沙拉", quote: "運動完來點輕食剛剛好。" },
-            { id: "ling", name: "玲玲", occupation: "髮型設計師", emoji: "💇🏻‍♀️", color: "fuchsia", wishItem: "夏威夷鮮蝦披薩", drink: "草莓奶昔", likes: "新髮型、披薩派對和奶昔", quote: "今天要用披薩犒賞自己！" },
-            { id: "jun", name: "阿俊", occupation: "計程車司機", emoji: "🚕", color: "yellow", wishItem: "黃金起司薯條", drink: "經典冰美式", likes: "聽老歌配薯條和咖啡", quote: "趁休息時間補充一下精神。" },
-            { id: "peipei", name: "沛沛", occupation: "幼兒園園長", emoji: "🧑🏻‍🏫", color: "violet", wishItem: "酥皮濃湯", drink: "鮮榨柳橙汁", likes: "暖呼呼的濃湯與孩子們的笑聲", quote: "今天想喝一碗熱熱的濃湯。" },
-            { id: "haoran", name: "浩然", occupation: "攝影師", emoji: "📷", color: "slate", wishItem: "夏威夷鮮蝦披薩", drink: "黑糖珍珠鮮奶", likes: "拍下美好瞬間和分享披薩", quote: "這份餐點看起來很上相！" },
-            { id: "jing", name: "小靖", occupation: "獸醫師", emoji: "🧑🏻‍⚕️", color: "teal", wishItem: "日式炸雞塊", drink: "草莓奶昔", likes: "毛小孩、炸雞和草莓奶昔", quote: "照顧完小動物，要來吃點好的。" },
-            { id: "yuting", name: "雨庭", occupation: "作家", emoji: "✍🏻", color: "indigo", wishItem: "奶油蘑菇義大利麵", drink: "經典冰美式", likes: "閱讀、寫故事和蘑菇義大利麵", quote: "一杯咖啡配一份義大利麵，靈感來了！" },
-            { id: "zhe", name: "阿哲", occupation: "水電師傅", emoji: "🧑🏻‍🔧", color: "blue", wishItem: "招牌牛肉堡", drink: "鮮榨柳橙汁", likes: "修好東西後大口吃漢堡", quote: "忙完工作，先補充能量！" },
-            { id: "meiling", name: "美玲", occupation: "會計師", emoji: "👩🏻‍💼", color: "cyan", wishItem: "酥皮濃湯", drink: "經典冰美式", likes: "整理帳本和慢慢喝咖啡", quote: "今天的帳算完了，來點熱湯吧。" },
-            { id: "xiaohao", name: "小豪", occupation: "籃球員", emoji: "🏀", color: "orange", wishItem: "炙燒鮭魚排", drink: "鮮榨柳橙汁", likes: "籃球、鮭魚和清爽果汁", quote: "練習完要吃飽飽！" },
-            { id: "yixin", name: "依欣", occupation: "牙醫師", emoji: "🦷", color: "sky", wishItem: "凱薩沙拉", drink: "草莓奶昔", likes: "清爽沙拉和偶爾的小小甜點", quote: "今天想來點清爽又可愛的搭配。" },
-            { id: "cheng", name: "阿成", occupation: "麵包師傅", emoji: "👨🏻‍🍳", color: "amber", wishItem: "奶油蘑菇義大利麵", drink: "黑糖珍珠鮮奶", likes: "研究食譜和濃郁奶香", quote: "做了一早上的麵包，換我吃飯啦！" },
-            { id: "xinyi", name: "欣怡", occupation: "導遊", emoji: "🧳", color: "purple", wishItem: "夏威夷鮮蝦披薩", drink: "鮮榨柳橙汁", likes: "旅行、海鮮和分享旅途故事", quote: "想起海邊旅行，就想吃鮮蝦披薩！" },
-            { id: "leilei", name: "蕾蕾", occupation: "歌手", emoji: "🎤", color: "pink", wishItem: "草莓奶昔", drink: "黑糖珍珠鮮奶", likes: "唱歌、草莓和甜甜的飲料", quote: "唱完歌要用奶昔潤潤喉！" },
-            { id: "ming", name: "明哲", occupation: "圖書館員", emoji: "📚", color: "stone", wishItem: "酥皮濃湯", drink: "經典冰美式", likes: "安靜看書和熱騰騰的濃湯", quote: "看書前先來吃點暖呼呼的。" },
-            { id: "dandan", name: "丹丹", occupation: "魔術師", emoji: "🎩", color: "violet", wishItem: "黃金起司薯條", drink: "草莓奶昔", likes: "魔術、起司和驚喜甜點", quote: "猜猜看，我最愛的餐點是什麼？" },
-            { id: "junyi", name: "俊逸", occupation: "機師", emoji: "👨🏻‍✈️", color: "blue", wishItem: "炙燒鮭魚排", drink: "鮮榨柳橙汁", likes: "看雲、旅行和美味鮭魚", quote: "飛行回來，想好好坐下來吃一餐。" },
-            { id: "xiaoqi", name: "小琪", occupation: "珠寶設計師", emoji: "💎", color: "fuchsia", wishItem: "夏威夷鮮蝦披薩", drink: "草莓奶昔", likes: "閃亮的小物和繽紛的披薩", quote: "今天的披薩一定也很漂亮！" },
-            { id: "dacheng", name: "大成", occupation: "農夫", emoji: "👨🏻‍🌾", color: "green", wishItem: "凱薩沙拉", drink: "鮮榨柳橙汁", likes: "田園生活、新鮮蔬菜和水果", quote: "吃點清爽的，繼續有精神工作！" },
-            { id: "ruoxi", name: "若曦", occupation: "律師", emoji: "👩🏻‍⚖️", color: "indigo", wishItem: "招牌牛肉堡", drink: "經典冰美式", likes: "看推理小說和俐落的漢堡", quote: "今天的午餐判決：漢堡勝出！" },
-            { id: "xiaoyu", name: "小宇", occupation: "學生", emoji: "🧑🏻‍🎒", color: "cyan", wishItem: "黃金起司薯條", drink: "黑糖珍珠鮮奶", likes: "放學後和同學分享薯條", quote: "下課啦！今天要吃好多薯條。" },
-            { id: "xiaoman", name: "小滿", occupation: "瑜伽老師", emoji: "🧘🏻‍♀️", color: "teal", wishItem: "凱薩沙拉", drink: "鮮榨柳橙汁", likes: "瑜伽、蔬菜和清新的果汁", quote: "吃得清爽，心情也輕盈。" },
-            { id: "yong", name: "阿勇", occupation: "木工師傅", emoji: "🪚", color: "amber", wishItem: "日式炸雞塊", drink: "經典冰美式", likes: "手作木家具和酥脆炸雞", quote: "手藝活做完，要來一份炸雞！" },
-            { id: "lan", name: "小藍", occupation: "海洋研究員", emoji: "🧑🏻‍🔬", color: "blue", wishItem: "炙燒鮭魚排", drink: "鮮榨柳橙汁", likes: "海洋生物和鮭魚料理", quote: "今天想吃和海洋有關的美味！" },
-            { id: "yahui", name: "雅惠", occupation: "郵局行員", emoji: "👩🏻‍💼", color: "rose", wishItem: "奶油蘑菇義大利麵", drink: "草莓奶昔", likes: "收集明信片和奶油蘑菇麵", quote: "午餐時間到了，來份喜歡的義大利麵。" },
-            { id: "xiaofeng", name: "小峰", occupation: "登山客", emoji: "🥾", color: "lime", wishItem: "招牌牛肉堡", drink: "鮮榨柳橙汁", likes: "爬山看風景和大口吃漢堡", quote: "走了好多路，漢堡最能補充體力！" },
-            { id: "xiaoya", name: "小雅", occupation: "舞台劇演員", emoji: "🎭", color: "purple", wishItem: "夏威夷鮮蝦披薩", drink: "黑糖珍珠鮮奶", likes: "表演、披薩和珍珠奶茶", quote: "謝幕後要和劇團夥伴吃披薩！" },
-            { id: "shifu", name: "阿福", occupation: "鐘錶師傅", emoji: "⌚", color: "slate", wishItem: "酥皮濃湯", drink: "經典冰美式", likes: "修理老鐘和細細品嚐濃湯", quote: "時間剛好，來喝一碗濃湯！" },
-            { id: "xiaorou", name: "小柔", occupation: "甜點師", emoji: "🧁", color: "pink", wishItem: "草莓奶昔", drink: "黑糖珍珠鮮奶", likes: "製作甜點、草莓和珍珠奶茶", quote: "甜點師今天想偷懶，直接喝奶昔！" },
-            { id: "guang", name: "阿光", occupation: "水族館導覽員", emoji: "🐠", color: "teal", wishItem: "日式炸雞塊", drink: "鮮榨柳橙汁", likes: "魚兒、海底世界和酥脆炸雞", quote: "今天的魚兒很可愛，炸雞也一定很棒！" },
-            { id: "xiaojie", name: "小潔", occupation: "環境調查員", emoji: "🌿", color: "green", wishItem: "凱薩沙拉", drink: "草莓奶昔", likes: "親近大自然和新鮮沙拉", quote: "忙完戶外調查，想吃點清爽的！" },
-            { id: "yating", name: "雅婷", occupation: "新聞記者", emoji: "📰", color: "sky", wishItem: "招牌牛肉堡", drink: "經典冰美式", likes: "追蹤新鮮消息和快速美味的漢堡", quote: "趕稿前先來份漢堡補充精神！" },
-            { id: "zheng", name: "阿政", occupation: "公車司機", emoji: "🚌", color: "blue", wishItem: "日式炸雞塊", drink: "鮮榨柳橙汁", likes: "沿途風景和酥脆炸雞", quote: "休息時間來吃點香噴噴的！" },
-            { id: "weiting", name: "薇庭", occupation: "室內設計師", emoji: "📐", color: "violet", wishItem: "夏威夷鮮蝦披薩", drink: "草莓奶昔", likes: "漂亮空間、海鮮披薩和粉嫩奶昔", quote: "這份餐點的配色也太可愛了吧！" },
-            { id: "xuanxuan", name: "萱萱", occupation: "花藝師", emoji: "💐", color: "pink", wishItem: "凱薩沙拉", drink: "鮮榨柳橙汁", likes: "鮮花、清爽蔬菜和果汁", quote: "今天想吃一份像花園一樣清新的餐點。" },
-            { id: "guanyu", name: "冠宇", occupation: "棒球選手", emoji: "⚾", color: "orange", wishItem: "炙燒鮭魚排", drink: "鮮榨柳橙汁", likes: "棒球訓練和營養滿滿的鮭魚", quote: "練球後要好好補充體力！" },
-            { id: "xiaoqin", name: "小琴", occupation: "小提琴家", emoji: "🎻", color: "fuchsia", wishItem: "奶油蘑菇義大利麵", drink: "經典冰美式", likes: "古典樂和香濃的蘑菇義大利麵", quote: "演出前來點喜歡的義大利麵。" },
-            { id: "zhiming", name: "志明", occupation: "消防設備檢查員", emoji: "🧯", color: "red", wishItem: "黃金起司薯條", drink: "黑糖珍珠鮮奶", likes: "確認安全設備和起司薯條", quote: "檢查完畢，來享受起司的幸福！" },
-            { id: "yuhan", name: "雨涵", occupation: "氣象主播", emoji: "🌦️", color: "cyan", wishItem: "酥皮濃湯", drink: "鮮榨柳橙汁", likes: "觀察天氣和暖呼呼的濃湯", quote: "今天的美食預報是濃湯好天氣！" },
-            { id: "xiaole", name: "小樂", occupation: "音樂老師", emoji: "🎹", color: "indigo", wishItem: "草莓奶昔", drink: "黑糖珍珠鮮奶", likes: "教孩子彈琴和甜甜的草莓奶昔", quote: "來杯奶昔，心情就像音符一樣愉快！" },
-            { id: "shuhan", name: "書涵", occupation: "考古學家", emoji: "🦴", color: "amber", wishItem: "招牌牛肉堡", drink: "鮮榨柳橙汁", likes: "挖掘古老故事和飽足的牛肉堡", quote: "今天的挖掘工作很順利，該吃午餐啦！" },
-            { id: "yongjie", name: "永傑", occupation: "郵輪船長", emoji: "🚢", color: "blue", wishItem: "炙燒鮭魚排", drink: "經典冰美式", likes: "航海、看海和鮭魚料理", quote: "航行途中也要好好享用美食。" },
-            { id: "xinxin", name: "欣欣", occupation: "玩具設計師", emoji: "🧸", color: "pink", wishItem: "黃金起司薯條", drink: "草莓奶昔", likes: "設計可愛玩具和繽紛點心", quote: "薯條和奶昔是最棒的玩伴！" },
-            { id: "chengyu", name: "承宇", occupation: "程式設計師", emoji: "🖥️", color: "emerald", wishItem: "奶油蘑菇義大利麵", drink: "經典冰美式", likes: "打造新軟體和咖啡配義大利麵", quote: "程式跑完了，換我補充能量！" },
-            { id: "yumei", name: "玉梅", occupation: "裁縫師", emoji: "🧵", color: "rose", wishItem: "酥皮濃湯", drink: "草莓奶昔", likes: "縫製漂亮衣服和香濃濃湯", quote: "休息一下，喝碗暖暖的濃湯。" },
-            { id: "jiakai", name: "家愷", occupation: "滑板選手", emoji: "🛹", color: "lime", wishItem: "日式炸雞塊", drink: "黑糖珍珠鮮奶", likes: "練習新招式和炸雞配珍奶", quote: "滑完一大圈，最想吃炸雞！" },
-            { id: "xiaofang", name: "小芳", occupation: "社工師", emoji: "🤝🏻", color: "teal", wishItem: "凱薩沙拉", drink: "鮮榨柳橙汁", likes: "陪伴大家和清爽健康的餐點", quote: "忙了一天，來份清爽沙拉吧。" },
-            { id: "zhong", name: "阿忠", occupation: "園藝師", emoji: "🪴", color: "green", wishItem: "夏威夷鮮蝦披薩", drink: "鮮榨柳橙汁", likes: "種植花草和海鮮披薩", quote: "今天花園長得很好，值得吃披薩慶祝！" },
-            { id: "lingyu", name: "玲玉", occupation: "博物館策展人", emoji: "🏛️", color: "purple", wishItem: "奶油蘑菇義大利麵", drink: "經典冰美式", likes: "欣賞藝術品和慢慢品嚐義大利麵", quote: "看展後來一份經典口味吧。" },
-            { id: "xiaokai", name: "小凱", occupation: "快遞員", emoji: "📦", color: "orange", wishItem: "招牌牛肉堡", drink: "草莓奶昔", likes: "把包裹送到大家手上和大口吃漢堡", quote: "送完最後一件，先來吃點好料！" },
-            { id: "yining", name: "依寧", occupation: "天文學家", emoji: "🔭", color: "indigo", wishItem: "酥皮濃湯", drink: "經典冰美式", likes: "觀察星空和深夜的熱湯咖啡", quote: "觀星前先暖暖身子、補充咖啡！" },
-            { id: "xiaobai", name: "小白", occupation: "寵物美容師", emoji: "🐩", color: "fuchsia", wishItem: "黃金起司薯條", drink: "黑糖珍珠鮮奶", likes: "幫毛小孩打扮和起司薯條", quote: "今天大家都香噴噴的，換我吃點心！" },
-            { id: "junhao", name: "俊豪", occupation: "電影導演", emoji: "🎬", color: "slate", wishItem: "夏威夷鮮蝦披薩", drink: "黑糖珍珠鮮奶", likes: "拍電影、和劇組分享披薩", quote: "這場戲拍完，大家一起吃披薩！" }
+            { id: "yoyo", name: "悠悠", occupation: "幼稚園老師", emoji: "👩🏻‍🏫", color: "violet", wishItem: "涼拌小黃瓜", drink: "木瓜牛奶", likes: "可愛的小點心、草莓和假日野餐", quote: "忙完一天，要來點甜甜的獎勵！" },
+            { id: "bo", name: "阿波", occupation: "郵差", emoji: "🧑🏻‍🚴", color: "emerald", wishItem: "雞排", drink: "冬瓜檸檬", likes: "騎車兜風、補充元氣的炸雞", quote: "跑了一整天，這香味也太棒了！" },
+            { id: "lin", name: "林奶奶", occupation: "退休老師", emoji: "👵🏻", color: "orange", wishItem: "牛肉麵", drink: "古早味紅茶", likes: "看書、種花，還有和老朋友喝台灣茶飲", quote: "今天也要好好享受悠閒時光。" },
+            { id: "momo", name: "毛毛", occupation: "插畫家", emoji: "🧑🏻‍🎨", color: "fuchsia", wishItem: "鹽酥雞", drink: "珍珠奶茶", likes: "畫畫找靈感、豆干和繽紛的生活", quote: "美食也能給我好多創作靈感！" },
+            { id: "an", name: "安安", occupation: "護理師", emoji: "👩🏻‍⚕️", color: "rose", wishItem: "涼拌小黃瓜", drink: "冬瓜檸檬", likes: "清爽燙青菜和下班後的陽光", quote: "忙碌的班後，想吃點清爽的！" },
+            { id: "kai", name: "凱文", occupation: "工程師", emoji: "👨🏻‍💻", color: "sky", wishItem: "滷肉飯", drink: "木瓜牛奶", likes: "寫程式、滷肉飯和甜甜的木瓜牛奶", quote: "今天的 bug 就交給滷肉飯解決！" },
+            { id: "yue", name: "小月", occupation: "舞者", emoji: "💃🏻", color: "pink", wishItem: "雞排", drink: "冬瓜檸檬", likes: "跳舞、炸雞和酸甜果汁", quote: "練舞後最想來份炸雞！" },
+            { id: "dawei", name: "大偉", occupation: "消防員", emoji: "👨🏻‍🚒", color: "orange", wishItem: "虱目魚肚粥", drink: "古早味紅茶", likes: "戶外活動和香煎鮭魚", quote: "來一份有飽足感的餐點吧！" },
+            { id: "xuan", name: "小萱", occupation: "花店店員", emoji: "👩🏻‍🌾", color: "emerald", wishItem: "木瓜牛奶", drink: "珍珠奶茶", likes: "照顧花花草草和草莓甜點", quote: "今天也想過得甜甜的！" },
+            { id: "bojun", name: "柏鈞", occupation: "健身教練", emoji: "🏋🏻‍♂️", color: "lime", wishItem: "涼拌小黃瓜", drink: "古早味紅茶", likes: "運動後的清爽燙青菜", quote: "運動完來點輕食剛剛好。" },
+            { id: "ling", name: "玲玲", occupation: "髮型設計師", emoji: "💇🏻‍♀️", color: "fuchsia", wishItem: "蔥油雞腿飯", drink: "木瓜牛奶", likes: "新髮型、台式雞腿便當派對和木瓜牛奶", quote: "今天要用台式雞腿便當犒賞自己！" },
+            { id: "jun", name: "阿俊", occupation: "計程車司機", emoji: "🚕", color: "yellow", wishItem: "鹽酥雞", drink: "古早味紅茶", likes: "聽老歌配鹽酥雞和台灣茶飲", quote: "趁休息時間補充一下精神。" },
+            { id: "peipei", name: "沛沛", occupation: "幼兒園園長", emoji: "🧑🏻‍🏫", color: "violet", wishItem: "四神湯", drink: "冬瓜檸檬", likes: "暖呼呼的濃湯與孩子們的笑聲", quote: "今天想喝一碗熱熱的濃湯。" },
+            { id: "haoran", name: "浩然", occupation: "攝影師", emoji: "📷", color: "slate", wishItem: "蔥油雞腿飯", drink: "珍珠奶茶", likes: "拍下美好瞬間和分享台式雞腿便當", quote: "這份餐點看起來很上相！" },
+            { id: "jing", name: "小靖", occupation: "獸醫師", emoji: "🧑🏻‍⚕️", color: "teal", wishItem: "雞排", drink: "木瓜牛奶", likes: "毛小孩、炸雞和木瓜牛奶", quote: "照顧完小動物，要來吃點好的。" },
+            { id: "yuting", name: "雨庭", occupation: "作家", emoji: "✍🏻", color: "indigo", wishItem: "牛肉麵", drink: "古早味紅茶", likes: "閱讀、寫故事和牛肉麵", quote: "一杯台灣茶飲配一份牛肉麵，靈感來了！" },
+            { id: "zhe", name: "阿哲", occupation: "水電師傅", emoji: "🧑🏻‍🔧", color: "blue", wishItem: "滷肉飯", drink: "冬瓜檸檬", likes: "修好東西後大口吃滷肉飯", quote: "忙完工作，先補充能量！" },
+            { id: "meiling", name: "美玲", occupation: "會計師", emoji: "👩🏻‍💼", color: "cyan", wishItem: "四神湯", drink: "古早味紅茶", likes: "整理帳本和慢慢喝台灣茶飲", quote: "今天的帳算完了，來點熱湯吧。" },
+            { id: "xiaohao", name: "小豪", occupation: "籃球員", emoji: "🏀", color: "orange", wishItem: "虱目魚肚粥", drink: "冬瓜檸檬", likes: "籃球、鮭魚和清爽果汁", quote: "練習完要吃飽飽！" },
+            { id: "yixin", name: "依欣", occupation: "牙醫師", emoji: "🦷", color: "sky", wishItem: "涼拌小黃瓜", drink: "木瓜牛奶", likes: "清爽燙青菜和偶爾的小小甜點", quote: "今天想來點清爽又可愛的搭配。" },
+            { id: "cheng", name: "阿成", occupation: "麵包師傅", emoji: "👨🏻‍🍳", color: "amber", wishItem: "牛肉麵", drink: "珍珠奶茶", likes: "研究食譜和濃郁奶香", quote: "做了一早上的麵包，換我吃飯啦！" },
+            { id: "xinyi", name: "欣怡", occupation: "導遊", emoji: "🧳", color: "purple", wishItem: "蔥油雞腿飯", drink: "冬瓜檸檬", likes: "旅行、海鮮和分享旅途故事", quote: "想起海邊旅行，就想吃台式雞腿便當！" },
+            { id: "leilei", name: "蕾蕾", occupation: "歌手", emoji: "🎤", color: "pink", wishItem: "木瓜牛奶", drink: "珍珠奶茶", likes: "唱歌、草莓和甜甜的飲料", quote: "唱完歌要用木瓜牛奶潤潤喉！" },
+            { id: "ming", name: "明哲", occupation: "圖書館員", emoji: "📚", color: "stone", wishItem: "四神湯", drink: "古早味紅茶", likes: "安靜看書和熱騰騰的濃湯", quote: "看書前先來吃點暖呼呼的。" },
+            { id: "dandan", name: "丹丹", occupation: "魔術師", emoji: "🎩", color: "violet", wishItem: "鹽酥雞", drink: "木瓜牛奶", likes: "魔術、豆干和驚喜甜點", quote: "猜猜看，我最愛的餐點是什麼？" },
+            { id: "junyi", name: "俊逸", occupation: "機師", emoji: "👨🏻‍✈️", color: "blue", wishItem: "虱目魚肚粥", drink: "冬瓜檸檬", likes: "看雲、旅行和美味鮭魚", quote: "飛行回來，想好好坐下來吃一餐。" },
+            { id: "xiaoqi", name: "小琪", occupation: "珠寶設計師", emoji: "💎", color: "fuchsia", wishItem: "蔥油雞腿飯", drink: "木瓜牛奶", likes: "閃亮的小物和繽紛的台式雞腿便當", quote: "今天的台式雞腿便當一定也很漂亮！" },
+            { id: "dacheng", name: "大成", occupation: "農夫", emoji: "👨🏻‍🌾", color: "green", wishItem: "涼拌小黃瓜", drink: "冬瓜檸檬", likes: "田園生活、新鮮蔬菜和水果", quote: "吃點清爽的，繼續有精神工作！" },
+            { id: "ruoxi", name: "若曦", occupation: "律師", emoji: "👩🏻‍⚖️", color: "indigo", wishItem: "滷肉飯", drink: "古早味紅茶", likes: "看推理小說和俐落的滷肉飯", quote: "今天的午餐判決：滷肉飯勝出！" },
+            { id: "xiaoyu", name: "小宇", occupation: "學生", emoji: "🧑🏻‍🎒", color: "cyan", wishItem: "鹽酥雞", drink: "珍珠奶茶", likes: "放學後和同學分享鹽酥雞", quote: "下課啦！今天要吃好多鹽酥雞。" },
+            { id: "xiaoman", name: "小滿", occupation: "瑜伽老師", emoji: "🧘🏻‍♀️", color: "teal", wishItem: "涼拌小黃瓜", drink: "冬瓜檸檬", likes: "瑜伽、蔬菜和清新的果汁", quote: "吃得清爽，心情也輕盈。" },
+            { id: "yong", name: "阿勇", occupation: "木工師傅", emoji: "🪚", color: "amber", wishItem: "雞排", drink: "古早味紅茶", likes: "手作木家具和酥脆炸雞", quote: "手藝活做完，要來一份炸雞！" },
+            { id: "lan", name: "小藍", occupation: "海洋研究員", emoji: "🧑🏻‍🔬", color: "blue", wishItem: "虱目魚肚粥", drink: "冬瓜檸檬", likes: "海洋生物和鮭魚料理", quote: "今天想吃和海洋有關的美味！" },
+            { id: "yahui", name: "雅惠", occupation: "郵局行員", emoji: "👩🏻‍💼", color: "rose", wishItem: "牛肉麵", drink: "木瓜牛奶", likes: "收集明信片和牛肉麵", quote: "午餐時間到了，來份喜歡的牛肉麵。" },
+            { id: "xiaofeng", name: "小峰", occupation: "登山客", emoji: "🥾", color: "lime", wishItem: "滷肉飯", drink: "冬瓜檸檬", likes: "爬山看風景和大口吃滷肉飯", quote: "走了好多路，滷肉飯最能補充體力！" },
+            { id: "xiaoya", name: "小雅", occupation: "舞台劇演員", emoji: "🎭", color: "purple", wishItem: "蔥油雞腿飯", drink: "珍珠奶茶", likes: "表演、台式雞腿便當和珍珠奶茶", quote: "謝幕後要和劇團夥伴吃台式雞腿便當！" },
+            { id: "shifu", name: "阿福", occupation: "鐘錶師傅", emoji: "⌚", color: "slate", wishItem: "四神湯", drink: "古早味紅茶", likes: "修理老鐘和細細品嚐濃湯", quote: "時間剛好，來喝一碗濃湯！" },
+            { id: "xiaorou", name: "小柔", occupation: "甜點師", emoji: "🧁", color: "pink", wishItem: "木瓜牛奶", drink: "珍珠奶茶", likes: "製作甜點、草莓和珍珠奶茶", quote: "甜點師今天想偷懶，直接喝木瓜牛奶！" },
+            { id: "guang", name: "阿光", occupation: "水族館導覽員", emoji: "🐠", color: "teal", wishItem: "雞排", drink: "冬瓜檸檬", likes: "魚兒、海底世界和酥脆炸雞", quote: "今天的魚兒很可愛，炸雞也一定很棒！" },
+            { id: "xiaojie", name: "小潔", occupation: "環境調查員", emoji: "🌿", color: "green", wishItem: "涼拌小黃瓜", drink: "木瓜牛奶", likes: "親近大自然和新鮮燙青菜", quote: "忙完戶外調查，想吃點清爽的！" },
+            { id: "yating", name: "雅婷", occupation: "新聞記者", emoji: "📰", color: "sky", wishItem: "滷肉飯", drink: "古早味紅茶", likes: "追蹤新鮮消息和快速美味的滷肉飯", quote: "趕稿前先來份滷肉飯補充精神！" },
+            { id: "zheng", name: "阿政", occupation: "公車司機", emoji: "🚌", color: "blue", wishItem: "雞排", drink: "冬瓜檸檬", likes: "沿途風景和酥脆炸雞", quote: "休息時間來吃點香噴噴的！" },
+            { id: "weiting", name: "薇庭", occupation: "室內設計師", emoji: "📐", color: "violet", wishItem: "蔥油雞腿飯", drink: "木瓜牛奶", likes: "漂亮空間、海鮮台式雞腿便當和粉嫩木瓜牛奶", quote: "這份餐點的配色也太可愛了吧！" },
+            { id: "xuanxuan", name: "萱萱", occupation: "花藝師", emoji: "💐", color: "pink", wishItem: "涼拌小黃瓜", drink: "冬瓜檸檬", likes: "鮮花、清爽蔬菜和果汁", quote: "今天想吃一份像花園一樣清新的餐點。" },
+            { id: "guanyu", name: "冠宇", occupation: "棒球選手", emoji: "⚾", color: "orange", wishItem: "虱目魚肚粥", drink: "冬瓜檸檬", likes: "棒球訓練和營養滿滿的鮭魚", quote: "練球後要好好補充體力！" },
+            { id: "xiaoqin", name: "小琴", occupation: "小提琴家", emoji: "🎻", color: "fuchsia", wishItem: "牛肉麵", drink: "古早味紅茶", likes: "古典樂和香濃的牛肉麵", quote: "演出前來點喜歡的牛肉麵。" },
+            { id: "zhiming", name: "志明", occupation: "消防設備檢查員", emoji: "🧯", color: "red", wishItem: "鹽酥雞", drink: "珍珠奶茶", likes: "確認安全設備和豆干鹽酥雞", quote: "檢查完畢，來享受豆干的幸福！" },
+            { id: "yuhan", name: "雨涵", occupation: "氣象主播", emoji: "🌦️", color: "cyan", wishItem: "四神湯", drink: "冬瓜檸檬", likes: "觀察天氣和暖呼呼的濃湯", quote: "今天的美食預報是濃湯好天氣！" },
+            { id: "xiaole", name: "小樂", occupation: "音樂老師", emoji: "🎹", color: "indigo", wishItem: "木瓜牛奶", drink: "珍珠奶茶", likes: "教孩子彈琴和甜甜的木瓜牛奶", quote: "來杯木瓜牛奶，心情就像音符一樣愉快！" },
+            { id: "shuhan", name: "書涵", occupation: "考古學家", emoji: "🦴", color: "amber", wishItem: "滷肉飯", drink: "冬瓜檸檬", likes: "挖掘古老故事和飽足的牛肉堡", quote: "今天的挖掘工作很順利，該吃午餐啦！" },
+            { id: "yongjie", name: "永傑", occupation: "郵輪船長", emoji: "🚢", color: "blue", wishItem: "虱目魚肚粥", drink: "古早味紅茶", likes: "航海、看海和鮭魚料理", quote: "航行途中也要好好享用美食。" },
+            { id: "xinxin", name: "欣欣", occupation: "玩具設計師", emoji: "🧸", color: "pink", wishItem: "鹽酥雞", drink: "木瓜牛奶", likes: "設計可愛玩具和繽紛點心", quote: "鹽酥雞和木瓜牛奶是最棒的玩伴！" },
+            { id: "chengyu", name: "承宇", occupation: "程式設計師", emoji: "🖥️", color: "emerald", wishItem: "牛肉麵", drink: "古早味紅茶", likes: "打造新軟體和台灣茶飲配牛肉麵", quote: "程式跑完了，換我補充能量！" },
+            { id: "yumei", name: "玉梅", occupation: "裁縫師", emoji: "🧵", color: "rose", wishItem: "四神湯", drink: "木瓜牛奶", likes: "縫製漂亮衣服和香濃濃湯", quote: "休息一下，喝碗暖暖的濃湯。" },
+            { id: "jiakai", name: "家愷", occupation: "滑板選手", emoji: "🛹", color: "lime", wishItem: "雞排", drink: "珍珠奶茶", likes: "練習新招式和炸雞配珍奶", quote: "滑完一大圈，最想吃炸雞！" },
+            { id: "xiaofang", name: "小芳", occupation: "社工師", emoji: "🤝🏻", color: "teal", wishItem: "涼拌小黃瓜", drink: "冬瓜檸檬", likes: "陪伴大家和清爽健康的餐點", quote: "忙了一天，來份清爽燙青菜吧。" },
+            { id: "zhong", name: "阿忠", occupation: "園藝師", emoji: "🪴", color: "green", wishItem: "蔥油雞腿飯", drink: "冬瓜檸檬", likes: "種植花草和海鮮台式雞腿便當", quote: "今天花園長得很好，值得吃台式雞腿便當慶祝！" },
+            { id: "lingyu", name: "玲玉", occupation: "博物館策展人", emoji: "🏛️", color: "purple", wishItem: "牛肉麵", drink: "古早味紅茶", likes: "欣賞藝術品和慢慢品嚐牛肉麵", quote: "看展後來一份經典口味吧。" },
+            { id: "xiaokai", name: "小凱", occupation: "快遞員", emoji: "📦", color: "orange", wishItem: "滷肉飯", drink: "木瓜牛奶", likes: "把包裹送到大家手上和大口吃滷肉飯", quote: "送完最後一件，先來吃點好料！" },
+            { id: "yining", name: "依寧", occupation: "天文學家", emoji: "🔭", color: "indigo", wishItem: "四神湯", drink: "古早味紅茶", likes: "觀察星空和深夜的熱湯台灣茶飲", quote: "觀星前先暖暖身子、補充台灣茶飲！" },
+            { id: "xiaobai", name: "小白", occupation: "寵物美容師", emoji: "🐩", color: "fuchsia", wishItem: "鹽酥雞", drink: "珍珠奶茶", likes: "幫毛小孩打扮和豆干鹽酥雞", quote: "今天大家都香噴噴的，換我吃點心！" },
+            { id: "junhao", name: "俊豪", occupation: "電影導演", emoji: "🎬", color: "slate", wishItem: "蔥油雞腿飯", drink: "珍珠奶茶", likes: "拍電影、和劇組分享台式雞腿便當", quote: "這場戲拍完，大家一起吃台式雞腿便當！" }
         ];
         const unlockedCustomers = new Set(JSON.parse(localStorage.getItem('unlockedCustomers') || '[]'));
 
