@@ -23,7 +23,8 @@
                 <p class="text-xs text-stone-400 font-medium">Restaurant Cashier & Order Simulator v1.1</p>
             </div>
         </div>
-        <div class="flex space-x-4 items-center">
+        <div class="flex flex-wrap gap-2 items-center justify-center">
+            <button id="sound-toggle" onclick="toggleSound()" class="bg-stone-900 hover:bg-stone-700 px-3 py-2 rounded-xl border border-stone-700 text-xs font-bold" aria-pressed="true">🔊 音效開</button>
             <div class="bg-stone-900 px-4 py-2 rounded-xl border border-stone-700 text-center">
                 <p class="text-[10px] text-stone-400 font-bold">今日營業額</p>
                 <p id="total-revenue" class="text-base font-black text-emerald-400">$0</p>
@@ -57,6 +58,7 @@
                         <div id="daily-task-progress" class="h-full bg-amber-500 rounded-full transition-all duration-300" style="width: 0%"></div>
                     </div>
                 </div>
+                <button onclick="replayActiveLevel()" class="bg-amber-700 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg text-xs whitespace-nowrap">🔁 重玩</button>
             </div>
         </section>
         
@@ -102,6 +104,14 @@
                 <div class="bg-stone-900 p-3 rounded-xl border border-stone-700 mb-3 flex justify-between items-center">
                     <span class="text-xs font-bold text-stone-400">總計金額 (Total):</span>
                     <span id="cart-total" class="text-lg font-black text-amber-400">$0</span>
+                </div>
+                <div class="flex items-center justify-between gap-2 mb-3">
+                    <label for="promotion-select" class="text-xs font-bold text-stone-300">🏷️ 優惠</label>
+                    <select id="promotion-select" onchange="updateCartUI()" class="bg-stone-900 border border-stone-700 rounded-lg px-2 py-1.5 text-xs text-amber-200">
+                        <option value="none">不使用優惠</option>
+                        <option value="percent10">全單 9 折</option>
+                        <option value="minus50">滿 $200 折 $50</option>
+                    </select>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
@@ -201,6 +211,71 @@
         let currentCustomer = null;
         let isDeliveryOrder = false;
         let cart = [];
+        let soundEnabled = localStorage.getItem('cashierSoundEnabled') !== 'false';
+        let soundContext = null;
+        const ORDER_TIME_LIMIT = 60;
+        let orderSecondsRemaining = ORDER_TIME_LIMIT;
+        let orderTimer = null;
+
+        function stopOrderTimer() {
+            if (orderTimer !== null) clearInterval(orderTimer);
+            orderTimer = null;
+        }
+
+        function updateOrderTimer() {
+            const status = document.getElementById('order-status');
+            if (orderSecondsRemaining <= 0) {
+                stopOrderTimer();
+                status.innerText = '⏰ 點餐時間到';
+                status.className = 'text-xs bg-red-950 text-red-300 px-2 py-0.5 rounded font-bold';
+                return;
+            }
+            status.innerText = `${isDeliveryOrder ? '外送製作中' : '點餐中'} · ${orderSecondsRemaining} 秒`;
+        }
+
+        function startOrderTimer() {
+            stopOrderTimer();
+            orderSecondsRemaining = ORDER_TIME_LIMIT;
+            updateOrderTimer();
+            orderTimer = setInterval(() => {
+                orderSecondsRemaining -= 1;
+                updateOrderTimer();
+            }, 1000);
+        }
+
+        function playSound(kind = 'tap') {
+            if (!soundEnabled) return;
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
+                soundContext ||= new AudioContextClass();
+                if (soundContext.state === 'suspended') soundContext.resume();
+                const tones = kind === 'success' ? [660, 880] : kind === 'customer' ? [523, 659] : [440];
+                tones.forEach((frequency, index) => {
+                    const oscillator = soundContext.createOscillator();
+                    const gain = soundContext.createGain();
+                    const start = soundContext.currentTime + index * 0.12;
+                    oscillator.type = 'sine';
+                    oscillator.frequency.value = frequency;
+                    gain.gain.setValueAtTime(0.0001, start);
+                    gain.gain.exponentialRampToValueAtTime(0.12, start + 0.015);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.16);
+                    oscillator.connect(gain);
+                    gain.connect(soundContext.destination);
+                    oscillator.start(start);
+                    oscillator.stop(start + 0.17);
+                });
+            } catch (error) { /* 音效不可用時不影響遊戲 */ }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('cashierSoundEnabled', String(soundEnabled));
+            const button = document.getElementById('sound-toggle');
+            button.textContent = soundEnabled ? '🔊 音效開' : '🔇 音效關';
+            button.setAttribute('aria-pressed', String(soundEnabled));
+            if (soundEnabled) playSound();
+        }
 
         function getDailyTaskTarget(level) {
             return 10 + Math.floor((level - 1) / 10);
@@ -268,6 +343,10 @@
             closeLevelModal();
         }
 
+        function replayActiveLevel() {
+            startLevelChallenge(activeTaskLevel);
+        }
+
         function saveDailyTask() {
             try {
                 localStorage.setItem('cashierDailyTask', JSON.stringify({ date: dailyTaskDate, orders: dailyOrders, level: dailyTaskLevel }));
@@ -289,7 +368,7 @@
             }
         }
 
-        const menuItems = [
+        let menuItems = [
             // 經典餐點（供原有客人點餐）
             { id: 1, name: "滷肉飯", category: "main", price: 180, emoji: "🍚" },
             { id: 2, name: "鹽酥雞", category: "side", price: 90, emoji: "🍗" },
@@ -382,6 +461,8 @@
             { id: 84, name: "冬瓜鮮奶", category: "drink", price: 60, emoji: "🥛" },
             { id: 85, name: "桂花烏龍", category: "drink", price: 50, emoji: "🍵" }
         ];
+        // 以餐點名稱去重，保留清單中第一次出現的餐點資料。
+        menuItems = [...new Map(menuItems.map(item => [item.name, item])).values()];
 
         const customerTypes = [
             { id: "chen", name: "上班族小陳", occupation: "上班族", emoji: "🧑🏻‍💻", color: "sky", wishItem: "滷肉飯", drink: "古早味紅茶", likes: "效率滿分的午休、滷肉飯和準時下班", quote: "今天也要用美食補充電力！" },
@@ -504,6 +585,8 @@
         }
 
         function nextCustomer() {
+            playSound('customer');
+            stopOrderTimer();
             isDeliveryOrder = Math.random() < 0.3;
             currentCustomer = { ...customerTypes[Math.floor(Math.random() * customerTypes.length)] };
             unlockedCustomers.add(currentCustomer.id);
@@ -524,6 +607,7 @@
             document.getElementById('order-status').className = isDeliveryOrder
                 ? "text-xs bg-sky-950 text-sky-200 px-2 py-1 rounded font-black"
                 : "text-xs bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded font-bold";
+            startOrderTimer();
             document.getElementById('customer-wish-label').innerText = isDeliveryOrder ? "📱 Uber Eats 外送訂單：" : "💬 顧客口頭需求：";
             document.getElementById('customer-wish').innerText = isDeliveryOrder
                 ? `外送單 #${Math.floor(1000 + Math.random() * 9000)}：${currentCustomer.wishItem} 和 ${currentCustomer.drink}。完成後交給到店外送員。`
@@ -542,11 +626,11 @@
             }
             const found = cart.find(i => i.id === item.id);
             if (found) {
-                found.qty++;
-            } else {
-                cart.push({ ...item, qty: 1 });
+                return;
             }
+            cart.push({ ...item, qty: 1 });
             updateCartUI();
+            playSound();
         }
 
         function removeFromCart(id) {
@@ -571,7 +655,14 @@
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('cart-total').innerText = `$${total}`;
+            document.getElementById('cart-total').innerText = `$${getDiscountedTotal(total)}`;
+        }
+
+        function getDiscountedTotal(subtotal) {
+            const promotion = document.getElementById('promotion-select')?.value || 'none';
+            if (promotion === 'percent10') return Math.round(subtotal * 0.9);
+            if (promotion === 'minus50' && subtotal >= 200) return subtotal - 50;
+            return subtotal;
         }
 
         function checkout() {
@@ -583,7 +674,8 @@
                 confirmCheckout();
                 return;
             }
-            const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const total = getDiscountedTotal(subtotal);
             document.getElementById('modal-total-text').innerText = `應收金額：$${total}`;
             document.getElementById('cash-given').value = total + 100;
             document.getElementById('checkout-modal').classList.remove('hidden');
@@ -597,15 +689,18 @@
 
         function confirmCheckout() {
             if (!currentCustomer) return;
+            playSound('success');
             ensureCurrentDay();
 
-            const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const total = getDiscountedTotal(subtotal);
             const cash = isDeliveryOrder ? total : parseInt(document.getElementById('cash-given').value);
 
             if (isNaN(cash) || cash < total) {
                 alert("客人給的現金不足或金額輸入錯誤！");
                 return;
             }
+            stopOrderTimer();
 
             const change = cash - total;
             revenue += total;
@@ -673,6 +768,8 @@
         }
 
         loadDailyTask();
+        document.getElementById('sound-toggle').textContent = soundEnabled ? '🔊 音效開' : '🔇 音效關';
+        document.getElementById('sound-toggle').setAttribute('aria-pressed', String(soundEnabled));
         renderMenu();
         renderAlbum();
     </script>
