@@ -58,6 +58,7 @@
                         <div id="daily-task-progress" class="h-full bg-amber-500 rounded-full transition-all duration-300" style="width: 0%"></div>
                     </div>
                 </div>
+                <button onclick="replayActiveLevel()" class="bg-amber-700 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-lg text-xs whitespace-nowrap">🔁 重玩</button>
             </div>
         </section>
         
@@ -103,6 +104,14 @@
                 <div class="bg-stone-900 p-3 rounded-xl border border-stone-700 mb-3 flex justify-between items-center">
                     <span class="text-xs font-bold text-stone-400">總計金額 (Total):</span>
                     <span id="cart-total" class="text-lg font-black text-amber-400">$0</span>
+                </div>
+                <div class="flex items-center justify-between gap-2 mb-3">
+                    <label for="promotion-select" class="text-xs font-bold text-stone-300">🏷️ 優惠</label>
+                    <select id="promotion-select" onchange="updateCartUI()" class="bg-stone-900 border border-stone-700 rounded-lg px-2 py-1.5 text-xs text-amber-200">
+                        <option value="none">不使用優惠</option>
+                        <option value="percent10">全單 9 折</option>
+                        <option value="minus50">滿 $200 折 $50</option>
+                    </select>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
@@ -332,6 +341,10 @@
             }
             renderDailyTask();
             closeLevelModal();
+        }
+
+        function replayActiveLevel() {
+            startLevelChallenge(activeTaskLevel);
         }
 
         function saveDailyTask() {
@@ -642,7 +655,14 @@
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('cart-total').innerText = `$${total}`;
+            document.getElementById('cart-total').innerText = `$${getDiscountedTotal(total)}`;
+        }
+
+        function getDiscountedTotal(subtotal) {
+            const promotion = document.getElementById('promotion-select')?.value || 'none';
+            if (promotion === 'percent10') return Math.round(subtotal * 0.9);
+            if (promotion === 'minus50' && subtotal >= 200) return subtotal - 50;
+            return subtotal;
         }
 
         function checkout() {
@@ -654,7 +674,8 @@
                 confirmCheckout();
                 return;
             }
-            const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const total = getDiscountedTotal(subtotal);
             document.getElementById('modal-total-text').innerText = `應收金額：$${total}`;
             document.getElementById('cash-given').value = total + 100;
             document.getElementById('checkout-modal').classList.remove('hidden');
@@ -671,7 +692,8 @@
             playSound('success');
             ensureCurrentDay();
 
-            const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const total = getDiscountedTotal(subtotal);
             const cash = isDeliveryOrder ? total : parseInt(document.getElementById('cash-given').value);
 
             if (isNaN(cash) || cash < total) {
