@@ -178,6 +178,7 @@
         let dailyTaskLevel = 1;
         let activeTaskLevel = 1;
         let challengeOrders = 0;
+        const MAX_DAILY_TASK_LEVEL = 300;
         let dailyTaskDate = new Date().toLocaleDateString('en-CA');
         let currentCustomer = null;
         let cart = [];
@@ -192,7 +193,7 @@
                 const saved = JSON.parse(localStorage.getItem('cashierDailyTask') || 'null');
                 if (saved && saved.date === dailyTaskDate) {
                     dailyOrders = Number(saved.orders) || 0;
-                    dailyTaskLevel = Math.max(1, Number(saved.level) || 1);
+                    dailyTaskLevel = Math.min(MAX_DAILY_TASK_LEVEL, Math.max(1, Number(saved.level) || 1));
                 }
             } catch (error) {
                 dailyOrders = 0;
@@ -217,7 +218,8 @@
         function openLevelModal() {
             const list = document.getElementById('level-list');
             list.innerHTML = '';
-            for (let level = 1; level <= dailyTaskLevel + 1; level++) {
+            const lastVisibleLevel = Math.min(MAX_DAILY_TASK_LEVEL, dailyTaskLevel + 1);
+            for (let level = 1; level <= lastVisibleLevel; level++) {
                 const completed = level < dailyTaskLevel;
                 const available = level === dailyTaskLevel;
                 const button = document.createElement('button');
@@ -407,7 +409,7 @@
                 if (activeTaskLevel === dailyTaskLevel) {
                     taskMessage += ' 已解鎖下一關！';
                     dailyOrders = 0;
-                    dailyTaskLevel++;
+                    dailyTaskLevel = Math.min(MAX_DAILY_TASK_LEVEL, dailyTaskLevel + 1);
                     activeTaskLevel = dailyTaskLevel;
                     challengeOrders = 0;
                 } else {
