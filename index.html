@@ -111,6 +111,18 @@
         </div>
     </main>
 
+    <!-- 客人相簿 -->
+    <section class="w-full max-w-6xl bg-stone-800 shadow-2xl rounded-2xl p-5 border border-stone-700 mb-8">
+        <div class="flex flex-wrap justify-between items-end gap-2 mb-4 border-b border-stone-700 pb-3">
+            <div>
+                <h2 class="text-lg font-black text-pink-300">📸 可愛客人相簿</h2>
+                <p class="text-xs text-stone-400 mt-1">每次迎接新客人，就能認識他們並解鎖相簿！</p>
+            </div>
+            <span id="album-progress" class="text-xs font-bold text-amber-300 bg-stone-900 px-3 py-1.5 rounded-full">已認識 0 / 0 位</span>
+        </div>
+        <div id="customer-album" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+    </section>
+
     <!-- 結帳找零 Modal -->
     <div id="checkout-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
         <div class="bg-stone-800 border border-amber-500/50 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl">
@@ -157,11 +169,41 @@
         ];
 
         const customerTypes = [
-            { name: "上班族小陳", wishItem: "招牌牛肉堡", drink: "經典冰美式" },
-            { name: "大學生小美", wishItem: "奶油蘑菇義大利麵", drink: "黑糖珍珠鮮奶" },
-            { name: "美食家王大哥", wishItem: "炙燒鮭魚排", drink: "鮮榨柳橙汁" },
-            { name: "家庭主婦陳太太", wishItem: "夏威夷鮮蝦披薩", drink: "酥皮濃湯" }
+            { id: "chen", name: "小陳", occupation: "上班族", emoji: "🧑🏻‍💻", color: "sky", wishItem: "招牌牛肉堡", drink: "經典冰美式", likes: "效率滿分的午休、冰美式和準時下班", quote: "今天也要用美食補充電力！" },
+            { id: "mei", name: "小美", occupation: "大學生", emoji: "👩🏻‍🎓", color: "pink", wishItem: "奶油蘑菇義大利麵", drink: "黑糖珍珠鮮奶", likes: "和朋友分享美食、甜甜的珍珠奶茶", quote: "這家店好適合拍照打卡～" },
+            { id: "wang", name: "王大哥", occupation: "美食家", emoji: "🧑🏻‍🍳", color: "amber", wishItem: "炙燒鮭魚排", drink: "鮮榨柳橙汁", likes: "探索新口味、細細品嚐食材", quote: "讓我看看今天有什麼好料！" },
+            { id: "chen_mom", name: "陳太太", occupation: "家庭主婦", emoji: "👩🏻‍🍼", color: "rose", wishItem: "夏威夷鮮蝦披薩", drink: "酥皮濃湯", likes: "熱鬧的家庭聚餐和香噴噴的披薩", quote: "孩子們最喜歡一起吃披薩了！" },
+            { id: "yoyo", name: "悠悠", occupation: "幼稚園老師", emoji: "👩🏻‍🏫", color: "violet", wishItem: "凱薩沙拉", drink: "草莓奶昔", likes: "可愛的小點心、草莓和假日野餐", quote: "忙完一天，要來點甜甜的獎勵！" },
+            { id: "bo", name: "阿波", occupation: "郵差", emoji: "🧑🏻‍🚴", color: "emerald", wishItem: "日式炸雞塊", drink: "鮮榨柳橙汁", likes: "騎車兜風、補充元氣的炸雞", quote: "跑了一整天，這香味也太棒了！" },
+            { id: "lin", name: "林奶奶", occupation: "退休老師", emoji: "👵🏻", color: "orange", wishItem: "奶油蘑菇義大利麵", drink: "經典冰美式", likes: "看書、種花，還有和老朋友喝咖啡", quote: "今天也要好好享受悠閒時光。" },
+            { id: "momo", name: "毛毛", occupation: "插畫家", emoji: "🧑🏻‍🎨", color: "fuchsia", wishItem: "黃金起司薯條", drink: "黑糖珍珠鮮奶", likes: "畫畫找靈感、起司和繽紛的生活", quote: "美食也能給我好多創作靈感！" }
         ];
+        const unlockedCustomers = new Set(JSON.parse(localStorage.getItem('unlockedCustomers') || '[]'));
+
+        function renderAlbum() {
+            const album = document.getElementById('customer-album');
+            album.innerHTML = '';
+            customerTypes.forEach(customer => {
+                const unlocked = unlockedCustomers.has(customer.id);
+                const card = document.createElement('article');
+                card.className = `rounded-2xl border p-3 min-h-44 ${unlocked ? 'bg-stone-900 border-stone-600' : 'bg-stone-900/60 border-stone-700 border-dashed'}`;
+                card.innerHTML = unlocked ? `
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-3xl bg-${customer.color}-950 rounded-xl p-2">${customer.emoji}</span>
+                        <div><h3 class="font-black text-sm text-white">${customer.name}</h3><p class="text-[10px] text-${customer.color}-300 font-bold">${customer.occupation}</p></div>
+                    </div>
+                    <p class="text-[11px] text-amber-200 mb-1">💛 喜歡：${customer.likes}</p>
+                    <p class="text-[11px] text-stone-400 italic">「${customer.quote}」</p>
+                ` : `
+                    <div class="h-full flex flex-col items-center justify-center text-center py-4">
+                        <span class="text-3xl mb-2 grayscale opacity-40">🔒</span>
+                        <p class="text-xs font-bold text-stone-500">神秘客人</p>
+                        <p class="text-[10px] text-stone-600 mt-1">迎接新客人來解鎖</p>
+                    </div>`;
+                album.appendChild(card);
+            });
+            document.getElementById('album-progress').innerText = `已認識 ${unlockedCustomers.size} / ${customerTypes.length} 位`;
+        }
 
         function renderMenu(category = 'all') {
             const grid = document.getElementById('menu-grid');
@@ -190,12 +232,15 @@
 
         function nextCustomer() {
             currentCustomer = customerTypes[Math.floor(Math.random() * customerTypes.length)];
+            unlockedCustomers.add(currentCustomer.id);
+            localStorage.setItem('unlockedCustomers', JSON.stringify([...unlockedCustomers]));
+            renderAlbum();
             cart = [];
             updateCartUI();
 
             document.getElementById('order-status').innerText = "點餐中...";
             document.getElementById('order-status').className = "text-xs bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded font-bold";
-            document.getElementById('customer-wish').innerText = `「你好！我想要一份 ${currentCustomer.wishItem} 和一杯 ${currentCustomer.drink}，謝謝！」`;
+            document.getElementById('customer-wish').innerText = `「${currentCustomer.quote} 我想要一份 ${currentCustomer.wishItem} 和一杯 ${currentCustomer.drink}，謝謝！」`;
             
             document.getElementById('checkout-btn').disabled = false;
             document.getElementById('checkout-btn').className = "flex-1 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-black py-2.5 px-4 rounded-xl text-xs shadow cursor-pointer transition pos-btn";
@@ -304,6 +349,7 @@
         }
 
         renderMenu();
+        renderAlbum();
     </script>
 </body>
 </html>
