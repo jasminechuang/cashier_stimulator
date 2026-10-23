@@ -117,6 +117,18 @@
         </div>
     </main>
 
+    <!-- 客人相簿 -->
+    <section class="w-full max-w-6xl bg-stone-800 shadow-2xl rounded-2xl p-5 border border-stone-700 mb-8">
+        <div class="flex flex-wrap justify-between items-end gap-2 mb-4 border-b border-stone-700 pb-3">
+            <div>
+                <h2 class="text-lg font-black text-pink-300">📸 可愛客人相簿</h2>
+                <p class="text-xs text-stone-400 mt-1">每次迎接新客人，就能認識他們並解鎖相簿！</p>
+            </div>
+            <span id="album-progress" class="text-xs font-bold text-amber-300 bg-stone-900 px-3 py-1.5 rounded-full">已認識 0 / 0 位</span>
+        </div>
+        <div id="customer-album" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+    </section>
+
     <!-- 結帳找零 Modal -->
     <div id="checkout-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4">
         <div class="bg-stone-800 border border-amber-500/50 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl">
@@ -149,6 +161,19 @@
         let cart = [];
 
         const menuItems = [
+            // 經典餐點（供原有客人點餐）
+            { id: 1, name: "招牌牛肉堡", category: "main", price: 180, emoji: "🍔" },
+            { id: 2, name: "黃金起司薯條", category: "side", price: 90, emoji: "🍟" },
+            { id: 3, name: "日式炸雞塊", category: "side", price: 120, emoji: "🍗" },
+            { id: 4, name: "黑糖珍珠鮮奶", category: "drink", price: 85, emoji: "🧋" },
+            { id: 5, name: "經典冰美式", category: "drink", price: 75, emoji: "☕" },
+            { id: 6, name: "奶油蘑菇義大利麵", category: "main", price: 220, emoji: "🍝" },
+            { id: 7, name: "夏威夷鮮蝦披薩", category: "main", price: 280, emoji: "🍕" },
+            { id: 8, name: "酥皮濃湯", category: "side", price: 80, emoji: "🥣" },
+            { id: 9, name: "鮮榨柳橙汁", category: "drink", price: 90, emoji: "🧃" },
+            { id: 10, name: "草莓奶昔", category: "drink", price: 110, emoji: "🥤" },
+            { id: 11, name: "炙燒鮭魚排", category: "main", price: 320, emoji: "🐟" },
+            { id: 12, name: "凱薩沙拉", category: "side", price: 140, emoji: "🥗" },
             // 台灣風味主食（新增 20 種）
             { id: 13, name: "滷肉飯", category: "main", price: 65, emoji: "🍚" },
             { id: 14, name: "雞肉飯", category: "main", price: 75, emoji: "🍚" },
@@ -209,11 +234,99 @@
         ];
 
         const customerTypes = [
-            { name: "上班族小陳", wishItem: "滷肉飯", drink: "古早味紅茶" },
-            { name: "大學生小美", wishItem: "蝦仁蛋炒飯", drink: "珍珠奶茶" },
-            { name: "美食家王大哥", wishItem: "牛肉麵", drink: "高山烏龍茶" },
-            { name: "家庭主婦陳太太", wishItem: "香煎雞腿便當", drink: "冬瓜檸檬" }
+            { id: "chen", name: "上班族小陳", occupation: "上班族", emoji: "🧑🏻‍💻", color: "sky", wishItem: "滷肉飯", drink: "古早味紅茶", likes: "效率滿分的午休、滷肉飯和準時下班", quote: "今天也要用美食補充電力！" },
+            { id: "mei", name: "大學生小美", occupation: "大學生", emoji: "👩🏻‍🎓", color: "pink", wishItem: "蝦仁蛋炒飯", drink: "珍珠奶茶", likes: "和朋友分享美食、炒飯和甜甜的珍珠奶茶", quote: "這家店好適合拍照打卡～" },
+            { id: "wang", name: "美食家王大哥", occupation: "美食家", emoji: "🧑🏻‍🍳", color: "amber", wishItem: "牛肉麵", drink: "高山烏龍茶", likes: "探索新口味、細細品嚐牛肉麵和茶", quote: "讓我看看今天有什麼好料！" },
+            { id: "chen_mom", name: "家庭主婦陳太太", occupation: "家庭主婦", emoji: "👩🏻‍🍼", color: "rose", wishItem: "香煎雞腿便當", drink: "冬瓜檸檬", likes: "熱鬧的家庭聚餐和香煎雞腿便當", quote: "孩子們最喜歡一起吃便當了！" },
+            { id: "yoyo", name: "悠悠", occupation: "幼稚園老師", emoji: "👩🏻‍🏫", color: "violet", wishItem: "凱薩沙拉", drink: "草莓奶昔", likes: "可愛的小點心、草莓和假日野餐", quote: "忙完一天，要來點甜甜的獎勵！" },
+            { id: "bo", name: "阿波", occupation: "郵差", emoji: "🧑🏻‍🚴", color: "emerald", wishItem: "日式炸雞塊", drink: "鮮榨柳橙汁", likes: "騎車兜風、補充元氣的炸雞", quote: "跑了一整天，這香味也太棒了！" },
+            { id: "lin", name: "林奶奶", occupation: "退休老師", emoji: "👵🏻", color: "orange", wishItem: "奶油蘑菇義大利麵", drink: "經典冰美式", likes: "看書、種花，還有和老朋友喝咖啡", quote: "今天也要好好享受悠閒時光。" },
+            { id: "momo", name: "毛毛", occupation: "插畫家", emoji: "🧑🏻‍🎨", color: "fuchsia", wishItem: "黃金起司薯條", drink: "黑糖珍珠鮮奶", likes: "畫畫找靈感、起司和繽紛的生活", quote: "美食也能給我好多創作靈感！" },
+            { id: "an", name: "安安", occupation: "護理師", emoji: "👩🏻‍⚕️", color: "rose", wishItem: "凱薩沙拉", drink: "鮮榨柳橙汁", likes: "清爽沙拉和下班後的陽光", quote: "忙碌的班後，想吃點清爽的！" },
+            { id: "kai", name: "凱文", occupation: "工程師", emoji: "👨🏻‍💻", color: "sky", wishItem: "招牌牛肉堡", drink: "草莓奶昔", likes: "寫程式、漢堡和甜甜的奶昔", quote: "今天的 bug 就交給漢堡解決！" },
+            { id: "yue", name: "小月", occupation: "舞者", emoji: "💃🏻", color: "pink", wishItem: "日式炸雞塊", drink: "鮮榨柳橙汁", likes: "跳舞、炸雞和酸甜果汁", quote: "練舞後最想來份炸雞！" },
+            { id: "dawei", name: "大偉", occupation: "消防員", emoji: "👨🏻‍🚒", color: "orange", wishItem: "炙燒鮭魚排", drink: "經典冰美式", likes: "戶外活動和香煎鮭魚", quote: "來一份有飽足感的餐點吧！" },
+            { id: "xuan", name: "小萱", occupation: "花店店員", emoji: "👩🏻‍🌾", color: "emerald", wishItem: "草莓奶昔", drink: "黑糖珍珠鮮奶", likes: "照顧花花草草和草莓甜點", quote: "今天也想過得甜甜的！" },
+            { id: "bojun", name: "柏鈞", occupation: "健身教練", emoji: "🏋🏻‍♂️", color: "lime", wishItem: "凱薩沙拉", drink: "經典冰美式", likes: "運動後的清爽沙拉", quote: "運動完來點輕食剛剛好。" },
+            { id: "ling", name: "玲玲", occupation: "髮型設計師", emoji: "💇🏻‍♀️", color: "fuchsia", wishItem: "夏威夷鮮蝦披薩", drink: "草莓奶昔", likes: "新髮型、披薩派對和奶昔", quote: "今天要用披薩犒賞自己！" },
+            { id: "jun", name: "阿俊", occupation: "計程車司機", emoji: "🚕", color: "yellow", wishItem: "黃金起司薯條", drink: "經典冰美式", likes: "聽老歌配薯條和咖啡", quote: "趁休息時間補充一下精神。" },
+            { id: "peipei", name: "沛沛", occupation: "幼兒園園長", emoji: "🧑🏻‍🏫", color: "violet", wishItem: "酥皮濃湯", drink: "鮮榨柳橙汁", likes: "暖呼呼的濃湯與孩子們的笑聲", quote: "今天想喝一碗熱熱的濃湯。" },
+            { id: "haoran", name: "浩然", occupation: "攝影師", emoji: "📷", color: "slate", wishItem: "夏威夷鮮蝦披薩", drink: "黑糖珍珠鮮奶", likes: "拍下美好瞬間和分享披薩", quote: "這份餐點看起來很上相！" },
+            { id: "jing", name: "小靖", occupation: "獸醫師", emoji: "🧑🏻‍⚕️", color: "teal", wishItem: "日式炸雞塊", drink: "草莓奶昔", likes: "毛小孩、炸雞和草莓奶昔", quote: "照顧完小動物，要來吃點好的。" },
+            { id: "yuting", name: "雨庭", occupation: "作家", emoji: "✍🏻", color: "indigo", wishItem: "奶油蘑菇義大利麵", drink: "經典冰美式", likes: "閱讀、寫故事和蘑菇義大利麵", quote: "一杯咖啡配一份義大利麵，靈感來了！" },
+            { id: "zhe", name: "阿哲", occupation: "水電師傅", emoji: "🧑🏻‍🔧", color: "blue", wishItem: "招牌牛肉堡", drink: "鮮榨柳橙汁", likes: "修好東西後大口吃漢堡", quote: "忙完工作，先補充能量！" },
+            { id: "meiling", name: "美玲", occupation: "會計師", emoji: "👩🏻‍💼", color: "cyan", wishItem: "酥皮濃湯", drink: "經典冰美式", likes: "整理帳本和慢慢喝咖啡", quote: "今天的帳算完了，來點熱湯吧。" },
+            { id: "xiaohao", name: "小豪", occupation: "籃球員", emoji: "🏀", color: "orange", wishItem: "炙燒鮭魚排", drink: "鮮榨柳橙汁", likes: "籃球、鮭魚和清爽果汁", quote: "練習完要吃飽飽！" },
+            { id: "yixin", name: "依欣", occupation: "牙醫師", emoji: "🦷", color: "sky", wishItem: "凱薩沙拉", drink: "草莓奶昔", likes: "清爽沙拉和偶爾的小小甜點", quote: "今天想來點清爽又可愛的搭配。" },
+            { id: "cheng", name: "阿成", occupation: "麵包師傅", emoji: "👨🏻‍🍳", color: "amber", wishItem: "奶油蘑菇義大利麵", drink: "黑糖珍珠鮮奶", likes: "研究食譜和濃郁奶香", quote: "做了一早上的麵包，換我吃飯啦！" },
+            { id: "xinyi", name: "欣怡", occupation: "導遊", emoji: "🧳", color: "purple", wishItem: "夏威夷鮮蝦披薩", drink: "鮮榨柳橙汁", likes: "旅行、海鮮和分享旅途故事", quote: "想起海邊旅行，就想吃鮮蝦披薩！" },
+            { id: "leilei", name: "蕾蕾", occupation: "歌手", emoji: "🎤", color: "pink", wishItem: "草莓奶昔", drink: "黑糖珍珠鮮奶", likes: "唱歌、草莓和甜甜的飲料", quote: "唱完歌要用奶昔潤潤喉！" },
+            { id: "ming", name: "明哲", occupation: "圖書館員", emoji: "📚", color: "stone", wishItem: "酥皮濃湯", drink: "經典冰美式", likes: "安靜看書和熱騰騰的濃湯", quote: "看書前先來吃點暖呼呼的。" },
+            { id: "dandan", name: "丹丹", occupation: "魔術師", emoji: "🎩", color: "violet", wishItem: "黃金起司薯條", drink: "草莓奶昔", likes: "魔術、起司和驚喜甜點", quote: "猜猜看，我最愛的餐點是什麼？" },
+            { id: "junyi", name: "俊逸", occupation: "機師", emoji: "👨🏻‍✈️", color: "blue", wishItem: "炙燒鮭魚排", drink: "鮮榨柳橙汁", likes: "看雲、旅行和美味鮭魚", quote: "飛行回來，想好好坐下來吃一餐。" },
+            { id: "xiaoqi", name: "小琪", occupation: "珠寶設計師", emoji: "💎", color: "fuchsia", wishItem: "夏威夷鮮蝦披薩", drink: "草莓奶昔", likes: "閃亮的小物和繽紛的披薩", quote: "今天的披薩一定也很漂亮！" },
+            { id: "dacheng", name: "大成", occupation: "農夫", emoji: "👨🏻‍🌾", color: "green", wishItem: "凱薩沙拉", drink: "鮮榨柳橙汁", likes: "田園生活、新鮮蔬菜和水果", quote: "吃點清爽的，繼續有精神工作！" },
+            { id: "ruoxi", name: "若曦", occupation: "律師", emoji: "👩🏻‍⚖️", color: "indigo", wishItem: "招牌牛肉堡", drink: "經典冰美式", likes: "看推理小說和俐落的漢堡", quote: "今天的午餐判決：漢堡勝出！" },
+            { id: "xiaoyu", name: "小宇", occupation: "學生", emoji: "🧑🏻‍🎒", color: "cyan", wishItem: "黃金起司薯條", drink: "黑糖珍珠鮮奶", likes: "放學後和同學分享薯條", quote: "下課啦！今天要吃好多薯條。" },
+            { id: "xiaoman", name: "小滿", occupation: "瑜伽老師", emoji: "🧘🏻‍♀️", color: "teal", wishItem: "凱薩沙拉", drink: "鮮榨柳橙汁", likes: "瑜伽、蔬菜和清新的果汁", quote: "吃得清爽，心情也輕盈。" },
+            { id: "yong", name: "阿勇", occupation: "木工師傅", emoji: "🪚", color: "amber", wishItem: "日式炸雞塊", drink: "經典冰美式", likes: "手作木家具和酥脆炸雞", quote: "手藝活做完，要來一份炸雞！" },
+            { id: "lan", name: "小藍", occupation: "海洋研究員", emoji: "🧑🏻‍🔬", color: "blue", wishItem: "炙燒鮭魚排", drink: "鮮榨柳橙汁", likes: "海洋生物和鮭魚料理", quote: "今天想吃和海洋有關的美味！" },
+            { id: "yahui", name: "雅惠", occupation: "郵局行員", emoji: "👩🏻‍💼", color: "rose", wishItem: "奶油蘑菇義大利麵", drink: "草莓奶昔", likes: "收集明信片和奶油蘑菇麵", quote: "午餐時間到了，來份喜歡的義大利麵。" },
+            { id: "xiaofeng", name: "小峰", occupation: "登山客", emoji: "🥾", color: "lime", wishItem: "招牌牛肉堡", drink: "鮮榨柳橙汁", likes: "爬山看風景和大口吃漢堡", quote: "走了好多路，漢堡最能補充體力！" },
+            { id: "xiaoya", name: "小雅", occupation: "舞台劇演員", emoji: "🎭", color: "purple", wishItem: "夏威夷鮮蝦披薩", drink: "黑糖珍珠鮮奶", likes: "表演、披薩和珍珠奶茶", quote: "謝幕後要和劇團夥伴吃披薩！" },
+            { id: "shifu", name: "阿福", occupation: "鐘錶師傅", emoji: "⌚", color: "slate", wishItem: "酥皮濃湯", drink: "經典冰美式", likes: "修理老鐘和細細品嚐濃湯", quote: "時間剛好，來喝一碗濃湯！" },
+            { id: "xiaorou", name: "小柔", occupation: "甜點師", emoji: "🧁", color: "pink", wishItem: "草莓奶昔", drink: "黑糖珍珠鮮奶", likes: "製作甜點、草莓和珍珠奶茶", quote: "甜點師今天想偷懶，直接喝奶昔！" },
+            { id: "guang", name: "阿光", occupation: "水族館導覽員", emoji: "🐠", color: "teal", wishItem: "日式炸雞塊", drink: "鮮榨柳橙汁", likes: "魚兒、海底世界和酥脆炸雞", quote: "今天的魚兒很可愛，炸雞也一定很棒！" },
+            { id: "xiaojie", name: "小潔", occupation: "環境調查員", emoji: "🌿", color: "green", wishItem: "凱薩沙拉", drink: "草莓奶昔", likes: "親近大自然和新鮮沙拉", quote: "忙完戶外調查，想吃點清爽的！" },
+            { id: "yating", name: "雅婷", occupation: "新聞記者", emoji: "📰", color: "sky", wishItem: "招牌牛肉堡", drink: "經典冰美式", likes: "追蹤新鮮消息和快速美味的漢堡", quote: "趕稿前先來份漢堡補充精神！" },
+            { id: "zheng", name: "阿政", occupation: "公車司機", emoji: "🚌", color: "blue", wishItem: "日式炸雞塊", drink: "鮮榨柳橙汁", likes: "沿途風景和酥脆炸雞", quote: "休息時間來吃點香噴噴的！" },
+            { id: "weiting", name: "薇庭", occupation: "室內設計師", emoji: "📐", color: "violet", wishItem: "夏威夷鮮蝦披薩", drink: "草莓奶昔", likes: "漂亮空間、海鮮披薩和粉嫩奶昔", quote: "這份餐點的配色也太可愛了吧！" },
+            { id: "xuanxuan", name: "萱萱", occupation: "花藝師", emoji: "💐", color: "pink", wishItem: "凱薩沙拉", drink: "鮮榨柳橙汁", likes: "鮮花、清爽蔬菜和果汁", quote: "今天想吃一份像花園一樣清新的餐點。" },
+            { id: "guanyu", name: "冠宇", occupation: "棒球選手", emoji: "⚾", color: "orange", wishItem: "炙燒鮭魚排", drink: "鮮榨柳橙汁", likes: "棒球訓練和營養滿滿的鮭魚", quote: "練球後要好好補充體力！" },
+            { id: "xiaoqin", name: "小琴", occupation: "小提琴家", emoji: "🎻", color: "fuchsia", wishItem: "奶油蘑菇義大利麵", drink: "經典冰美式", likes: "古典樂和香濃的蘑菇義大利麵", quote: "演出前來點喜歡的義大利麵。" },
+            { id: "zhiming", name: "志明", occupation: "消防設備檢查員", emoji: "🧯", color: "red", wishItem: "黃金起司薯條", drink: "黑糖珍珠鮮奶", likes: "確認安全設備和起司薯條", quote: "檢查完畢，來享受起司的幸福！" },
+            { id: "yuhan", name: "雨涵", occupation: "氣象主播", emoji: "🌦️", color: "cyan", wishItem: "酥皮濃湯", drink: "鮮榨柳橙汁", likes: "觀察天氣和暖呼呼的濃湯", quote: "今天的美食預報是濃湯好天氣！" },
+            { id: "xiaole", name: "小樂", occupation: "音樂老師", emoji: "🎹", color: "indigo", wishItem: "草莓奶昔", drink: "黑糖珍珠鮮奶", likes: "教孩子彈琴和甜甜的草莓奶昔", quote: "來杯奶昔，心情就像音符一樣愉快！" },
+            { id: "shuhan", name: "書涵", occupation: "考古學家", emoji: "🦴", color: "amber", wishItem: "招牌牛肉堡", drink: "鮮榨柳橙汁", likes: "挖掘古老故事和飽足的牛肉堡", quote: "今天的挖掘工作很順利，該吃午餐啦！" },
+            { id: "yongjie", name: "永傑", occupation: "郵輪船長", emoji: "🚢", color: "blue", wishItem: "炙燒鮭魚排", drink: "經典冰美式", likes: "航海、看海和鮭魚料理", quote: "航行途中也要好好享用美食。" },
+            { id: "xinxin", name: "欣欣", occupation: "玩具設計師", emoji: "🧸", color: "pink", wishItem: "黃金起司薯條", drink: "草莓奶昔", likes: "設計可愛玩具和繽紛點心", quote: "薯條和奶昔是最棒的玩伴！" },
+            { id: "chengyu", name: "承宇", occupation: "程式設計師", emoji: "🖥️", color: "emerald", wishItem: "奶油蘑菇義大利麵", drink: "經典冰美式", likes: "打造新軟體和咖啡配義大利麵", quote: "程式跑完了，換我補充能量！" },
+            { id: "yumei", name: "玉梅", occupation: "裁縫師", emoji: "🧵", color: "rose", wishItem: "酥皮濃湯", drink: "草莓奶昔", likes: "縫製漂亮衣服和香濃濃湯", quote: "休息一下，喝碗暖暖的濃湯。" },
+            { id: "jiakai", name: "家愷", occupation: "滑板選手", emoji: "🛹", color: "lime", wishItem: "日式炸雞塊", drink: "黑糖珍珠鮮奶", likes: "練習新招式和炸雞配珍奶", quote: "滑完一大圈，最想吃炸雞！" },
+            { id: "xiaofang", name: "小芳", occupation: "社工師", emoji: "🤝🏻", color: "teal", wishItem: "凱薩沙拉", drink: "鮮榨柳橙汁", likes: "陪伴大家和清爽健康的餐點", quote: "忙了一天，來份清爽沙拉吧。" },
+            { id: "zhong", name: "阿忠", occupation: "園藝師", emoji: "🪴", color: "green", wishItem: "夏威夷鮮蝦披薩", drink: "鮮榨柳橙汁", likes: "種植花草和海鮮披薩", quote: "今天花園長得很好，值得吃披薩慶祝！" },
+            { id: "lingyu", name: "玲玉", occupation: "博物館策展人", emoji: "🏛️", color: "purple", wishItem: "奶油蘑菇義大利麵", drink: "經典冰美式", likes: "欣賞藝術品和慢慢品嚐義大利麵", quote: "看展後來一份經典口味吧。" },
+            { id: "xiaokai", name: "小凱", occupation: "快遞員", emoji: "📦", color: "orange", wishItem: "招牌牛肉堡", drink: "草莓奶昔", likes: "把包裹送到大家手上和大口吃漢堡", quote: "送完最後一件，先來吃點好料！" },
+            { id: "yining", name: "依寧", occupation: "天文學家", emoji: "🔭", color: "indigo", wishItem: "酥皮濃湯", drink: "經典冰美式", likes: "觀察星空和深夜的熱湯咖啡", quote: "觀星前先暖暖身子、補充咖啡！" },
+            { id: "xiaobai", name: "小白", occupation: "寵物美容師", emoji: "🐩", color: "fuchsia", wishItem: "黃金起司薯條", drink: "黑糖珍珠鮮奶", likes: "幫毛小孩打扮和起司薯條", quote: "今天大家都香噴噴的，換我吃點心！" },
+            { id: "junhao", name: "俊豪", occupation: "電影導演", emoji: "🎬", color: "slate", wishItem: "夏威夷鮮蝦披薩", drink: "黑糖珍珠鮮奶", likes: "拍電影、和劇組分享披薩", quote: "這場戲拍完，大家一起吃披薩！" }
         ];
+        const unlockedCustomers = new Set(JSON.parse(localStorage.getItem('unlockedCustomers') || '[]'));
+
+        function renderAlbum() {
+            const album = document.getElementById('customer-album');
+            album.innerHTML = '';
+            customerTypes.forEach(customer => {
+                const unlocked = unlockedCustomers.has(customer.id);
+                const card = document.createElement('article');
+                card.className = `rounded-2xl border p-3 min-h-44 ${unlocked ? 'bg-stone-900 border-stone-600' : 'bg-stone-900/60 border-stone-700 border-dashed'}`;
+                card.innerHTML = unlocked ? `
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-3xl bg-${customer.color}-950 rounded-xl p-2">${customer.emoji}</span>
+                        <div><h3 class="font-black text-sm text-white">${customer.name}</h3><p class="text-[10px] text-${customer.color}-300 font-bold">${customer.occupation}</p></div>
+                    </div>
+                    <p class="text-[11px] text-amber-200 mb-1">💛 喜歡：${customer.likes}</p>
+                    <p class="text-[11px] text-stone-400 italic">「${customer.quote}」</p>
+                ` : `
+                    <div class="h-full flex flex-col items-center justify-center text-center py-4">
+                        <span class="text-3xl mb-2 grayscale opacity-40">🔒</span>
+                        <p class="text-xs font-bold text-stone-500">神秘客人</p>
+                        <p class="text-[10px] text-stone-600 mt-1">迎接新客人來解鎖</p>
+                    </div>`;
+                album.appendChild(card);
+            });
+            document.getElementById('album-progress').innerText = `已認識 ${unlockedCustomers.size} / ${customerTypes.length} 位`;
+        }
 
         function renderMenu(category = 'all') {
             const grid = document.getElementById('menu-grid');
@@ -243,6 +356,9 @@
         function nextCustomer() {
             isDeliveryOrder = Math.random() < 0.3;
             currentCustomer = { ...customerTypes[Math.floor(Math.random() * customerTypes.length)] };
+            unlockedCustomers.add(currentCustomer.id);
+            localStorage.setItem('unlockedCustomers', JSON.stringify([...unlockedCustomers]));
+            renderAlbum();
             cart = [];
             updateCartUI();
 
@@ -261,7 +377,7 @@
             document.getElementById('customer-wish-label').innerText = isDeliveryOrder ? "📱 Uber Eats 外送訂單：" : "💬 顧客口頭需求：";
             document.getElementById('customer-wish').innerText = isDeliveryOrder
                 ? `外送單 #${Math.floor(1000 + Math.random() * 9000)}：${currentCustomer.wishItem} 和 ${currentCustomer.drink}。完成後交給到店外送員。`
-                : `「你好！我想要一份 ${currentCustomer.wishItem} 和一杯 ${currentCustomer.drink}，謝謝！」`;
+                : `「${currentCustomer.quote} 我想要一份 ${currentCustomer.wishItem} 和一杯 ${currentCustomer.drink}，謝謝！」`;
             
             document.getElementById('checkout-btn').disabled = false;
             document.getElementById('checkout-btn').className = "flex-1 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-black py-2.5 px-4 rounded-xl text-xs shadow cursor-pointer transition pos-btn";
@@ -381,6 +497,7 @@
         }
 
         renderMenu();
+        renderAlbum();
     </script>
 </body>
 </html>
