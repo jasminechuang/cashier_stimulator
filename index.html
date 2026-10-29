@@ -217,6 +217,30 @@
         </div>
     </div>
 
+    <!-- 新手分步教學 -->
+    <div id="tutorial-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-[60] p-4" role="dialog" aria-modal="true" aria-labelledby="tutorial-title" aria-describedby="tutorial-description">
+        <section class="bg-stone-800 border border-amber-500/50 rounded-3xl p-5 sm:p-6 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between gap-3 mb-5">
+                <div>
+                    <p id="tutorial-step-count" class="text-xs font-bold text-amber-300">Step 1 / 5</p>
+                    <h2 id="tutorial-title" class="text-lg font-black text-amber-400 mt-1">新手上路</h2>
+                </div>
+                <button type="button" onclick="closeTutorial()" class="text-stone-400 hover:text-white text-2xl px-2" aria-label="略過並關閉教學">×</button>
+            </div>
+            <div class="rounded-2xl bg-stone-900 border border-stone-700 p-5 min-h-32">
+                <h3 id="tutorial-heading" class="text-base font-black text-stone-100 mb-2"></h3>
+                <p id="tutorial-description" class="text-sm leading-7 text-stone-300"></p>
+            </div>
+            <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+                <button type="button" onclick="closeTutorial()" class="text-xs font-bold text-stone-400 hover:text-white px-2 py-2">略過教學</button>
+                <div class="flex gap-2 justify-end">
+                    <button id="tutorial-prev" type="button" onclick="changeTutorialStep(-1)" class="bg-stone-700 hover:bg-stone-600 text-stone-200 font-bold px-4 py-2.5 rounded-xl text-xs">上一步</button>
+                    <button id="tutorial-next" type="button" onclick="changeTutorialStep(1)" class="bg-amber-500 hover:bg-amber-400 text-stone-950 font-black px-4 py-2.5 rounded-xl text-xs">下一步</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
     <!-- 關卡回顧與重玩 Modal -->
     <div id="level-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="level-modal-title">
         <div class="bg-stone-800 border border-amber-500/50 rounded-3xl p-5 max-w-lg w-full shadow-2xl max-h-[80vh] flex flex-col">
@@ -234,6 +258,55 @@
     <!-- 遊戲邏輯 Script -->
     <script src="game-data.js"></script>
     <script>
+        const tutorialSteps = [
+            { title: '迎接客人，先看清需求', description: '點「🔔 迎接下一位客人」，查看客人的內用或外送訂單與口頭需求。每位客人都會告訴你想要的主餐和飲料。' },
+            { title: '從菜單加入餐點', description: '在右側選擇餐點分類，再點餐點按鈕加入左側清單。將客人指定的主餐和飲料都加入；點錯的品項可在清單中按 ✕ 移除。' },
+            { title: '核對清單與優惠', description: '確認清單包含客人要的主餐和飲料，並查看總額。需要時選擇符合條件的優惠；「滿 $200 折 $50」僅在消費滿額時折抵。' },
+            { title: '送單並完成結帳', description: '點「💳 送單並結帳」。內用會顯示客人付款金額，確認找零並出餐；外送單會直接完成，交給到店外送員。漏掉指定主餐或飲料會影響服務評分。' },
+            { title: '完成訂單，繼續挑戰', description: '結帳後查看每日任務進度，再迎接下一位客人。完成指定訂單數可通過關卡；營業額與服務評分會顯示在頁面上。準備好就開始吧！' }
+        ];
+        let tutorialStepIndex = 0;
+
+        function renderTutorialStep() {
+            const step = tutorialSteps[tutorialStepIndex];
+            document.getElementById('tutorial-step-count').textContent = `Step ${tutorialStepIndex + 1} / ${tutorialSteps.length}`;
+            document.getElementById('tutorial-heading').textContent = step.title;
+            document.getElementById('tutorial-description').textContent = step.description;
+            document.getElementById('tutorial-prev').disabled = tutorialStepIndex === 0;
+            document.getElementById('tutorial-prev').classList.toggle('opacity-50', tutorialStepIndex === 0);
+            document.getElementById('tutorial-next').textContent = tutorialStepIndex === tutorialSteps.length - 1 ? '開始遊戲' : '下一步';
+        }
+
+        function openTutorial() {
+            tutorialStepIndex = 0;
+            renderTutorialStep();
+            const modal = document.getElementById('tutorial-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.getElementById('tutorial-next').focus();
+        }
+
+        function closeTutorial() {
+            const modal = document.getElementById('tutorial-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function changeTutorialStep(direction) {
+            const nextIndex = tutorialStepIndex + direction;
+            if (nextIndex < 0) return;
+            if (nextIndex >= tutorialSteps.length) {
+                closeTutorial();
+                return;
+            }
+            tutorialStepIndex = nextIndex;
+            renderTutorialStep();
+        }
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !document.getElementById('tutorial-modal').classList.contains('hidden')) closeTutorial();
+        });
+
         let revenue = Number(localStorage.getItem('cashierRevenue') || 0);
         let ratingScore = 5.0;
         let servedCount = 0;
@@ -922,6 +995,7 @@
         });
         refreshSharedProgress();
         renderMenu();
+        openTutorial();
     </script>
     <a href="https://4388.fun/g/3168" target="_blank" rel="noopener"><img src="https://4388.fun/badge-zh.png" width="176" height="44" alt="已收錄於 4388 小遊戲"></a>
 </body>
