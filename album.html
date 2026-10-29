@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>可愛客人相簿｜開工吧！社畜人生</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>body{font-family:'Noto Sans TC',sans-serif}</style>
+</head>
+<body class="min-h-screen bg-stone-900 text-stone-100 p-5 sm:p-8">
+    <main class="mx-auto max-w-6xl">
+        <a href="index.html" class="inline-flex items-center gap-2 rounded-lg border border-stone-700 bg-stone-800 px-3 py-2 text-sm font-bold text-stone-200 hover:bg-stone-700">← 回到收銀台</a>
+        <header class="my-5 rounded-3xl border border-pink-700/50 bg-gradient-to-br from-pink-950 to-stone-800 p-6 shadow-2xl">
+            <div class="flex flex-wrap items-end justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[0.25em] text-pink-300">A LITTLE GUEST BOOK</p><h1 class="mt-2 text-2xl font-black text-pink-100">📸 可愛客人相簿</h1><p class="mt-2 text-sm text-stone-300">每次迎接新客人，就能認識他們並解鎖收藏卡！</p></div><strong id="progress" class="rounded-full border border-pink-700/50 bg-stone-950/60 px-4 py-2 text-sm font-black text-pink-200">已認識 0 / 100 位</strong></div>
+        </header>
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3"><label class="sr-only" for="album-filter">篩選客人</label><select id="album-filter" class="rounded-lg border border-stone-700 bg-stone-800 px-3 py-2 text-sm text-stone-200"><option value="all">顯示全部客人</option><option value="unlocked">只看已解鎖</option><option value="locked">只看未解鎖</option></select><p class="text-xs text-stone-400">尚未解鎖的卡片會以神秘剪影顯示。</p></div>
+        <section id="album" class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5" aria-label="100 位客人圖鑑"></section>
+    </main>
+    <script src="game-data.js"></script>
+    <script>
+        const saved = JSON.parse(localStorage.getItem('unlockedCustomers') || '[]');
+        const unlocked = new Set(saved);
+        const album = document.getElementById('album');
+        const filter = document.getElementById('album-filter');
+        function render() {
+            album.innerHTML = '';
+            window.customerProfiles.forEach((guest, index) => {
+                const known = unlocked.has(guest.id);
+                if (filter.value === 'unlocked' && !known || filter.value === 'locked' && known) return;
+                const card = document.createElement('article');
+                card.className = `relative min-h-40 overflow-hidden rounded-2xl border p-3 transition hover:-translate-y-1 ${known ? 'border-pink-700/50 bg-gradient-to-br from-stone-800 to-pink-950/50' : 'border-stone-700 border-dashed bg-stone-800/70'}`;
+                card.innerHTML = `<span class="absolute right-2 top-2 text-[10px] font-black text-stone-500">#${String(index + 1).padStart(3, '0')}</span><div class="mb-2 text-4xl ${known ? '' : 'grayscale opacity-30'}">${known ? guest.emoji : '❔'}</div><h2 class="text-sm font-black ${known ? 'text-pink-200' : 'text-stone-500'}">${known ? guest.name : '神秘客人'}</h2><p class="mt-0.5 text-[10px] text-stone-400">${known ? guest.occupation : '迎接客人來解鎖'}</p><p class="mt-2 text-[10px] leading-relaxed text-stone-300">${known ? `「${guest.quote}」` : '✦ ✦ ✦'}</p>`;
+                album.appendChild(card);
+            });
+            document.getElementById('progress').textContent = `已認識 ${window.customerProfiles.filter(guest => unlocked.has(guest.id)).length} / 100 位`;
+        }
+        filter.addEventListener('change', render);
+        render();
+    </script>
+</body>
+</html>
