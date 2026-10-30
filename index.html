@@ -77,6 +77,7 @@
 
     <main class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-12 gap-6 mb-4">
         <!-- 每日任務 -->
+        <section class="md:col-span-12 bg-stone-800 shadow-xl rounded-2xl p-4 border border-emerald-700/50" aria-label="本輪服務進度"><div class="flex justify-between items-center gap-3"><span class="text-sm font-black text-emerald-300">👥 本輪服務進度</span><span id="round-progress-text" class="text-xs font-bold text-stone-300">已服務 0 / 200 位客人</span><span id="order-combination-count" class="text-[10px] text-stone-400">有效點餐組合計算中</span></div><div class="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700 mt-2"><div id="round-progress" class="h-full bg-emerald-500 rounded-full transition-all duration-300" style="width: 0%"></div></div></section>
         <section class="md:col-span-12 bg-stone-800 shadow-xl rounded-2xl p-4 border border-amber-700/50" aria-labelledby="daily-task-title">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
@@ -324,6 +325,8 @@
         let soundEnabled = localStorage.getItem('cashierSoundEnabled') !== 'false';
         let soundContext = null;
         const ORDER_TIME_LIMIT = 60;
+        const ROUND_CUSTOMER_TARGET = 200;
+        let roundServedCount = 0;
         let orderSecondsRemaining = ORDER_TIME_LIMIT;
         let orderTimer = null;
 
@@ -731,6 +734,12 @@
         menuItems = menuItems.filter(item => menuImagePaths[item.name]);
 
         const customerTypes = window.customerProfiles;
+        const customerDemandSentences = [
+            '請幫我準備一份新鮮又美味的餐點。',
+            '麻煩餐點簡單清爽一些，謝謝。',
+            '今天想吃點能補充元氣的美食。',
+            '請幫我確認餐點和飲料都放進訂單裡。'
+        ];
         let savedUnlockedCustomers = [];
         try {
             const saved = JSON.parse(localStorage.getItem('unlockedCustomers') || '[]');
@@ -764,6 +773,7 @@
                         if (currentCustomer.drink === item.name && replacement) currentCustomer.drink = replacement.name;
                     }
                     btn.remove();
+                    updateRoundProgress();
                 }, { once: true });
                 btn.onclick = () => addToCart(item);
                 grid.appendChild(btn);
@@ -776,11 +786,36 @@
             renderMenu(cat);
         }
 
+        function updateRoundProgress() {
+            const progress = Math.min(roundServedCount, ROUND_CUSTOMER_TARGET);
+            document.getElementById('round-progress-text').innerText = roundServedCount >= ROUND_CUSTOMER_TARGET
+                ? `本輪完成！已服務 ${ROUND_CUSTOMER_TARGET} / ${ROUND_CUSTOMER_TARGET} 位客人`
+                : `已服務 ${progress} / ${ROUND_CUSTOMER_TARGET} 位客人`;
+            document.getElementById('round-progress').style.width = `${progress / ROUND_CUSTOMER_TARGET * 100}%`;
+            const mains = menuItems.filter(item => item.category === 'main').length;
+            const drinks = menuItems.filter(item => item.category === 'drink').length;
+            const extras = menuItems.filter(item => ['side', 'soup', 'dessert'].includes(item.category)).length;
+            const combinations = mains * drinks * extras;
+            document.getElementById('order-combination-count').innerText = `可用不重複三品組合 ${combinations.toLocaleString()} 種`;
+        }
+
         function nextCustomer() {
+            if (roundServedCount >= ROUND_CUSTOMER_TARGET) return;
             playSound('customer');
             stopOrderTimer();
             isDeliveryOrder = Math.random() < 0.3;
             currentCustomer = { ...customerTypes[Math.floor(Math.random() * customerTypes.length)] };
+            const menuMains = menuItems.filter(item => item.category === 'main');
+            const menuDrinks = menuItems.filter(item => item.category === 'drink');
+            const menuExtras = menuItems.filter(item => ['side', 'soup', 'dessert'].includes(item.category));
+            const profileMain = menuMains.find(item => item.name === currentCustomer.wishItem);
+            const profileDrink = menuDrinks.find(item => item.name === currentCustomer.drink);
+            const requestedMain = profileMain || menuMains[Math.floor(Math.random() * menuMains.length)];
+            const requestedDrink = profileDrink || menuDrinks[Math.floor(Math.random() * menuDrinks.length)];
+            const requestedExtra = menuExtras[Math.floor(Math.random() * menuExtras.length)];
+            currentCustomer.wishItem = requestedMain.name;
+            currentCustomer.drink = requestedDrink.name;
+            currentCustomer.orderItems = [requestedMain, requestedDrink, requestedExtra];
             const isStudent = currentCustomer.occupation.includes('學生');
             const offerChance = purchasedUpgrades.has('couponChance') ? 0.5 : 0.28;
             currentOrderPromotion = isStudent
@@ -812,9 +847,11 @@
             document.getElementById('customer-wish-label').innerText = isDeliveryOrder ? "📱 Uber Eats 外送訂單：" : "💬 顧客口頭需求：";
             const demandSentence = customerDemandSentences[Math.floor(Math.random() * customerDemandSentences.length)];
             const offerText = currentOrderPromotion === 'student' ? '我是學生，今天有學生優惠嗎？請幫我用學生 85 折！' : currentOrderPromotion === 'guest10' ? '我有一張本店 9 折小優惠，結帳時可以幫我使用嗎？' : currentOrderPromotion === 'guest30' ? '我有一張折 30 元的小優惠券，麻煩結帳時幫我折抵！' : '';
+            const customerQuote = typeof currentCustomer.quote === 'string' ? currentCustomer.quote.trim() : '';
+            const spokenQuote = customerQuote ? ` ${customerQuote}` : '';
             document.getElementById('customer-wish').innerText = isDeliveryOrder
-                ? `外送單 #${Math.floor(1000 + Math.random() * 9000)}：${currentCustomer.wishItem} 和 ${currentCustomer.drink}。${demandSentence} ${offerText} 完成後交給到店外送員。`
-                : `「${demandSentence} ${currentCustomer.quote} ${offerText} 我想要一份 ${currentCustomer.wishItem} 和一杯 ${currentCustomer.drink}，謝謝！」`;
+                ? `外送單 #${Math.floor(1000 + Math.random() * 9000)}：${currentCustomer.orderItems.map(item => item.name).join('、')}。${demandSentence} ${offerText} 完成後交給到店外送員。`
+                : `「${demandSentence}${spokenQuote} ${offerText} 我想要 ${currentCustomer.orderItems.map(item => item.name).join('、')}，謝謝！」`;
             
             document.getElementById('checkout-btn').disabled = false;
             document.getElementById('checkout-btn').className = "flex-1 bg-emerald-600 hover:bg-emerald-500 text-stone-950 font-black py-2.5 px-4 rounded-xl text-xs shadow cursor-pointer transition pos-btn";
@@ -915,6 +952,8 @@
             const change = cash - total;
             revenue += total;
             servedCount++;
+            roundServedCount++;
+            updateRoundProgress();
             dailyOrders++;
             challengeOrders++;
             const taskTarget = getDailyTaskTarget(activeTaskLevel);
@@ -937,13 +976,14 @@
             saveDailyTask();
             renderDailyTask();
 
+            const allRequestedItems = currentCustomer.orderItems.every(requested => cart.some(item => item.id === requested.id));
             const hasMain = cart.some(i => i.name === currentCustomer.wishItem);
             const hasDrink = cart.some(i => i.name === currentCustomer.drink);
             let feedback = isDeliveryOrder ? "外送餐點已完成，請交給到店外送員。" : "結帳成功！客人非常滿意您的服務！⭐⭐⭐⭐⭐";
             
-            if (!hasMain || !hasDrink) {
+            if (!allRequestedItems) {
                 ratingScore = Math.max(1.0, ratingScore - 0.3);
-                feedback = "結帳完成，但似乎漏掉了客人想點的主餐或飲料...⭐⭐⭐";
+                feedback = "結帳完成，但似乎有客人指定的餐點漏點了...⭐⭐⭐";
             }
             if (hasMain && hasDrink && purchasedUpgrades.has('tip')) revenue += 50;
             if (hasMain && hasDrink && purchasedUpgrades.has('fastPrep')) revenue += 80;
@@ -970,8 +1010,11 @@
             // 重置按鈕狀態
             document.getElementById('checkout-btn').disabled = true;
             document.getElementById('checkout-btn').className = "flex-1 bg-stone-700 text-stone-500 font-bold py-2.5 px-4 rounded-xl text-xs shadow cursor-not-allowed";
-            document.getElementById('next-customer-btn').disabled = false;
-            document.getElementById('next-customer-btn').className = "bg-amber-600 hover:bg-amber-500 text-stone-950 font-black py-2.5 px-4 rounded-xl text-xs shadow cursor-pointer transition pos-btn";
+            const nextCustomerButton = document.getElementById('next-customer-btn');
+            nextCustomerButton.disabled = roundServedCount >= ROUND_CUSTOMER_TARGET;
+            nextCustomerButton.className = nextCustomerButton.disabled
+                ? "bg-stone-700 text-stone-500 font-bold py-2.5 px-4 rounded-xl text-xs cursor-not-allowed"
+                : "bg-amber-600 hover:bg-amber-500 text-stone-950 font-black py-2.5 px-4 rounded-xl text-xs shadow cursor-pointer transition pos-btn";
             
             if (!isDeliveryOrder) {
                 alert(`結帳完成！找零：$${change}${taskMessage}`);
@@ -981,6 +1024,7 @@
             currentCustomer = null;
         }
 
+        updateRoundProgress();
         loadDailyTask();
         document.getElementById('sound-toggle').textContent = soundEnabled ? '🔊 音效開' : '🔇 音效關';
         document.getElementById('sound-toggle').setAttribute('aria-pressed', String(soundEnabled));
