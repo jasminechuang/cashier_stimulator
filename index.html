@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <title>餐廳服務員收銀機點餐模擬器 - POS System</title>
-
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
         :root { --menu-photo-size: 80px; }
@@ -72,12 +71,25 @@
     </header>
 
     <!-- 頂部快捷內容：餐廳升級與客人圖鑑 -->
-    <nav class="w-full max-w-6xl grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6" aria-label="更多遊戲頁面">
+    <nav id="quick-links" class="w-full max-w-6xl grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6" aria-label="更多遊戲頁面">
+        <button onclick="showDashboard()" class="group text-left rounded-2xl border border-amber-700 bg-gradient-to-br from-amber-950 to-stone-800 p-5 shadow-xl hover:border-amber-400 hover:-translate-y-0.5 transition"><span class="text-3xl">📊</span><h2 class="mt-2 text-lg font-black text-amber-200">老闆後台儀表板</h2><p class="mt-1 text-xs text-stone-300">查看實際完成訂單的銷售趨勢與熱賣商品。</p><span class="mt-3 inline-block text-xs font-bold text-amber-300">查看銷售數據 →</span></button>
         <a href="upgrades.html" class="group rounded-2xl border border-emerald-700 bg-gradient-to-br from-emerald-950 to-stone-800 p-5 shadow-xl hover:border-emerald-400 hover:-translate-y-0.5 transition"><span class="text-3xl">📈</span><h2 class="mt-2 text-lg font-black text-emerald-200">店務升級</h2><p class="mt-1 text-xs text-stone-300">用營業額購買服務升級，讓店裡營運更順利。</p><span class="mt-3 inline-block text-xs font-bold text-emerald-300">前往店務升級 →</span></a>
         <a href="album.html" class="group rounded-2xl border border-pink-700 bg-gradient-to-br from-pink-950 to-stone-800 p-5 shadow-xl hover:border-pink-400 hover:-translate-y-0.5 transition"><span class="text-3xl">📸</span><h2 class="mt-2 text-lg font-black text-pink-200">可愛客人相簿</h2><p class="mt-1 text-xs text-stone-300">收集 100 位可愛客人，看看他們的故事與喜好。</p><span class="mt-3 inline-block text-xs font-bold text-pink-300">打開客人圖鑑 →</span></a>
     </nav>
 
-    <main class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-12 gap-6 mb-4">
+    <section id="dashboard-view" class="hidden w-full max-w-6xl mb-4" aria-labelledby="dashboard-title">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <div><p class="text-xs font-bold text-amber-400">📊 老闆後台</p><h2 id="dashboard-title" class="text-2xl font-black">銷售儀表板</h2><p class="text-xs text-stone-400 mt-1">僅統計此功能啟用後完成的訂單。</p></div>
+            <button onclick="hideDashboard()" class="bg-stone-700 hover:bg-stone-600 border border-stone-600 text-white font-bold px-4 py-2 rounded-xl text-sm">← 返回收銀畫面</button>
+        </div>
+        <div id="dashboard-empty" class="hidden rounded-2xl border border-stone-700 bg-stone-800 p-8 text-center text-stone-300"><span class="text-4xl">🧾</span><p class="font-bold mt-3">目前還沒有銷售資料</p><p class="text-sm text-stone-400 mt-1">完成幾筆結帳後，銷售趨勢和熱賣商品會顯示在這裡。</p></div>
+        <div id="dashboard-charts" class="hidden grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <article class="min-w-0 rounded-2xl border border-emerald-700/60 bg-stone-800 p-4 shadow-xl"><h3 class="font-black text-emerald-300 mb-3">銷售金額趨勢</h3><div class="relative h-72 sm:h-80"><canvas id="sales-chart" aria-label="依訂單時間排列的銷售金額趨勢圖"></canvas></div></article>
+            <article class="min-w-0 rounded-2xl border border-amber-700/60 bg-stone-800 p-4 shadow-xl"><h3 class="font-black text-amber-300 mb-3">熱賣商品</h3><div class="relative h-72 sm:h-80"><canvas id="items-chart" aria-label="依售出數量排序的商品長條圖"></canvas></div></article>
+        </div>
+    </section>
+
+    <main id="pos-view" class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-12 gap-6 mb-4">
         <!-- 每日任務 -->
         <section class="md:col-span-12 bg-stone-800 shadow-xl rounded-2xl p-4 border border-amber-700/50" aria-labelledby="daily-task-title">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -323,6 +335,57 @@
         let currentOrderPromotion = 'none';
         let currentCashGiven = 0;
         let cart = [];
+        const SALES_STORAGE_KEY = 'cashierSalesRecords';
+        let salesChart = null;
+        let itemsChart = null;
+
+        function readSalesRecords() {
+            try {
+                const records = JSON.parse(localStorage.getItem(SALES_STORAGE_KEY) || '[]');
+                return Array.isArray(records) ? records.filter(record => record && typeof record.timestamp === 'string' && Number.isFinite(record.amount) && Array.isArray(record.items)) : [];
+            } catch { return []; }
+        }
+
+        function showDashboard() {
+            document.getElementById('quick-links').classList.add('hidden');
+            document.getElementById('pos-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            renderDashboard();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function hideDashboard() {
+            document.getElementById('dashboard-view').classList.add('hidden');
+            document.getElementById('quick-links').classList.remove('hidden');
+            document.getElementById('pos-view').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderDashboard() {
+            const records = readSalesRecords().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            const empty = records.length === 0;
+            document.getElementById('dashboard-empty').classList.toggle('hidden', !empty);
+            document.getElementById('dashboard-charts').classList.toggle('hidden', empty);
+            if (empty || typeof Chart === 'undefined') return;
+            const money = value => `$${Number(value).toLocaleString('zh-TW')}`;
+            const tickColor = '#d6d3d1';
+            const salesLabels = records.map(record => new Date(record.timestamp).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
+            const productTotals = {};
+            records.forEach(record => record.items.forEach(item => {
+                if (item && typeof item.name === 'string' && Number.isFinite(item.quantity)) productTotals[item.name] = (productTotals[item.name] || 0) + item.quantity;
+            }));
+            const bestSellers = Object.entries(productTotals).sort((a, b) => b[1] - a[1]);
+            if (salesChart) salesChart.destroy();
+            if (itemsChart) itemsChart.destroy();
+            salesChart = new Chart(document.getElementById('sales-chart'), {
+                type: 'line', data: { labels: salesLabels, datasets: [{ label: '訂單銷售金額', data: records.map(record => record.amount), borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,.15)', pointBackgroundColor: '#fbbf24', pointRadius: 4, tension: .25, fill: true }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: tickColor } }, tooltip: { callbacks: { label: context => `銷售金額：${money(context.parsed.y)}` } } }, scales: { x: { title: { display: true, text: '訂單時間', color: tickColor }, ticks: { color: tickColor, maxRotation: 45, minRotation: 0 }, grid: { color: 'rgba(120,113,108,.2)' } }, y: { beginAtZero: true, title: { display: true, text: '銷售金額（元）', color: tickColor }, ticks: { color: tickColor, callback: value => money(value) }, grid: { color: 'rgba(120,113,108,.3)' } } } }
+            });
+            itemsChart = new Chart(document.getElementById('items-chart'), {
+                type: 'bar', data: { labels: bestSellers.map(item => item[0]), datasets: [{ label: '售出數量', data: bestSellers.map(item => item[1]), backgroundColor: '#f59e0b', borderColor: '#fbbf24', borderWidth: 1, borderRadius: 6 }] },
+                options: { indexAxis: bestSellers.length > 6 ? 'y' : 'x', responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: tickColor } } }, scales: { x: { beginAtZero: true, title: { display: true, text: bestSellers.length > 6 ? '售出數量' : '商品名稱', color: tickColor }, ticks: { color: tickColor, precision: 0 }, grid: { color: 'rgba(120,113,108,.3)' } }, y: { beginAtZero: true, title: { display: bestSellers.length > 6, text: '商品名稱', color: tickColor }, ticks: { color: tickColor }, grid: { color: 'rgba(120,113,108,.2)' } } } }
+            });
+        }
         let soundEnabled = localStorage.getItem('cashierSoundEnabled') !== 'false';
         let soundContext = null;
         const ORDER_TIME_LIMIT = 60;
@@ -774,7 +837,6 @@
                         if (currentCustomer.drink === item.name && replacement) currentCustomer.drink = replacement.name;
                     }
                     btn.remove();
-                    updateRoundProgress();
                 }, { once: true });
                 btn.onclick = () => addToCart(item);
                 grid.appendChild(btn);
@@ -785,19 +847,6 @@
             document.querySelectorAll('.category-tab').forEach(b => b.className = "bg-stone-700 text-stone-300 font-bold px-3 py-1.5 rounded-lg text-xs category-tab");
             selectedTab.className = "bg-amber-600 text-stone-950 font-bold px-3 py-1.5 rounded-lg text-xs category-tab";
             renderMenu(cat);
-        }
-
-        function updateRoundProgress() {
-            const progress = Math.min(roundServedCount, ROUND_CUSTOMER_TARGET);
-            document.getElementById('round-progress-text').innerText = roundServedCount >= ROUND_CUSTOMER_TARGET
-                ? `本輪完成！已服務 ${ROUND_CUSTOMER_TARGET} / ${ROUND_CUSTOMER_TARGET} 位客人`
-                : `已服務 ${progress} / ${ROUND_CUSTOMER_TARGET} 位客人`;
-            document.getElementById('round-progress').style.width = `${progress / ROUND_CUSTOMER_TARGET * 100}%`;
-            const mains = menuItems.filter(item => item.category === 'main').length;
-            const drinks = menuItems.filter(item => item.category === 'drink').length;
-            const extras = menuItems.filter(item => ['side', 'soup', 'dessert'].includes(item.category)).length;
-            const combinations = mains * drinks * extras;
-            document.getElementById('order-combination-count').innerText = `可用不重複三品組合 ${combinations.toLocaleString()} 種`;
         }
 
         function nextCustomer() {
@@ -950,11 +999,18 @@
             }
             stopOrderTimer();
 
+            const salesRecords = readSalesRecords();
+            salesRecords.push({
+                timestamp: new Date().toISOString(),
+                amount: total,
+                items: cart.map(item => ({ name: item.name, quantity: item.qty }))
+            });
+            localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(salesRecords));
+
             const change = cash - total;
             revenue += total;
             servedCount++;
             roundServedCount++;
-            updateRoundProgress();
             dailyOrders++;
             challengeOrders++;
             const taskTarget = getDailyTaskTarget(activeTaskLevel);
@@ -1025,7 +1081,6 @@
             currentCustomer = null;
         }
 
-        updateRoundProgress();
         loadDailyTask();
         document.getElementById('sound-toggle').textContent = soundEnabled ? '🔊 音效開' : '🔇 音效關';
         document.getElementById('sound-toggle').setAttribute('aria-pressed', String(soundEnabled));
@@ -1037,17 +1092,11 @@
         window.addEventListener('pageshow', refreshSharedProgress);
         window.addEventListener('storage', event => {
             if (event.key === 'cashierRevenue' || event.key === 'restaurantUpgrades') refreshSharedProgress();
+            if (event.key === SALES_STORAGE_KEY && !document.getElementById('dashboard-view').classList.contains('hidden')) renderDashboard();
         });
         refreshSharedProgress();
-openTutorial(); // 先讓使用者看教學
-
-// 修改 closeTutorial 函式，確保關閉教學時才渲染菜單
-function closeTutorial() {
-    const modal = document.getElementById('tutorial-modal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    renderMenu(); // <--- 確保關閉教學、畫面完全顯現時才渲染一次
-}
+        renderMenu();
+        openTutorial();
     </script>
     <a href="https://4388.fun/g/3168" target="_blank" rel="noopener"><img src="https://4388.fun/badge-zh.png" width="176" height="44" alt="已收錄於 4388 小遊戲"></a>
 </body>
