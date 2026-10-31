@@ -1059,8 +1059,15 @@
             if (event.key === 'cashierRevenue' || event.key === 'restaurantUpgrades') refreshSharedProgress();
         });
         refreshSharedProgress();
-        renderMenu();
-        openTutorial();
+openTutorial(); // 先讓使用者看教學
+
+// 修改 closeTutorial 函式，確保關閉教學時才渲染菜單
+function closeTutorial() {
+    const modal = document.getElementById('tutorial-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    renderMenu(); // <--- 確保關閉教學、畫面完全顯現時才渲染一次
+}
     </script>
     <a href="https://4388.fun/g/3168" target="_blank" rel="noopener"><img src="https://4388.fun/badge-zh.png" width="176" height="44" alt="已收錄於 4388 小遊戲"></a>
 </body>
